@@ -1,0 +1,26 @@
+2025-01-12 15:06:38:638 [32minfo[39m: [32mServer running in development mode on port 5001[39m
+2025-01-12 15:06:38:638 [32minfo[39m: [32mAPI Documentation available at http://localhost:5001/api-docs[39m
+2025-01-12 15:06:40:640 [32minfo[39m: [32mMongoDB Connected: cluster0-shard-00-01.v3ht8.mongodb.net[39m
+2025-01-12 15:11:37:1137 [32minfo[39m: [32mServer running in development mode on port 5001[39m
+2025-01-12 15:11:37:1137 [32minfo[39m: [32mAPI Documentation available at http://localhost:5001/api-docs[39m
+2025-01-12 15:11:39:1139 [32minfo[39m: [32mMongoDB Connected: cluster0-shard-00-01.v3ht8.mongodb.net[39m
+2025-01-12 15:16:10:1610 [32minfo[39m: [32mServer running in development mode on port 5001[39m
+2025-01-12 15:16:10:1610 [32minfo[39m: [32mAPI Documentation available at http://localhost:5001/api-docs[39m
+2025-01-12 15:16:12:1612 [32minfo[39m: [32mMongoDB Connected: cluster0-shard-00-00.v3ht8.mongodb.net[39m
+2025-01-12 15:47:35:4735 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 15:47:46:4746 [33mwarn[39m: [33mMongoDB disconnected[39m
+2025-01-12 15:47:46:4746 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 16:03:26:326 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 16:19:17:1917 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 16:35:08:358 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 16:41:12:4112 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 16:46:16:4616 [33mwarn[39m: [33mMongoDB disconnected[39m
+2025-01-12 16:46:47:4647 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 17:02:27:227 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 17:02:27:227 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 17:02:37:237 [33mwarn[39m: [33mMongoDB disconnected[39m
+2025-01-12 17:02:38:238 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 17:13:06:136 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 17:13:06:136 [32minfo[39m: [32mMongoDB reconnected[39m
+2025-01-12 17:13:17:1317 [33mwarn[39m: [33mMongoDB disconnected[39m
+2025-01-12 17:13:17:1317 [32minfo[39m: [32mMongoDB reconnected[39m
