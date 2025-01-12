@@ -1,0 +1,17 @@
+.env
+.env.local
+.env.test
+.env.prod
+/node_modules
+/build
+/dist
+/.pnp
+.pnp.js
+.cache
+
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
