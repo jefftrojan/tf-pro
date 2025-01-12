@@ -8,7 +8,7 @@
 /.pnp
 .pnp.js
 .cache
-
+logs
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
