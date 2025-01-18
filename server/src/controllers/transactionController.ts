@@ -28,7 +28,7 @@ export const getTransactions = async (
     // Build query
     const query: any = { user: req.user.id };
 
-    // Add date range to query
+    // Add date range to query if both dates are provided
     if (startDate && endDate) {
       query.date = {
         $gte: new Date(startDate as string),
@@ -36,30 +36,33 @@ export const getTransactions = async (
       };
     }
 
-    // Add type filter
-    if (type) {
+    // Add type filter if provided and not 'all'
+    if (type && type !== 'all') {
       query.type = type;
     }
 
-    // Add category filter
-    if (category) {
+    // Add category filter if provided and not 'all'
+    if (category && category !== 'all') {
       query.category = category;
     }
 
-    // Add account filter
-    if (account) {
+    // Add account filter if provided and not 'all'
+    if (account && account !== 'all') {
       query.account = account;
     }
 
     // Pagination
     const skip = (Number(page) - 1) * Number(limit);
 
+    // Execute query with pagination and populate account details
     const transactions = await Transaction.find(query)
       .sort(sort as string)
       .skip(skip)
       .limit(Number(limit))
-      .populate('account', 'name type');
+      .populate('account', 'name type')
+      .populate('category', 'name type'); // Optional: if you want category details too
 
+    // Get total count for pagination
     const total = await Transaction.countDocuments(query);
 
     res.status(200).json({

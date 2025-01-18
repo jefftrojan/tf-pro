@@ -40,7 +40,7 @@ const config: Config = {
   SMTP_PASSWORD: process.env.SMTP_PASSWORD || '',
   FROM_EMAIL: process.env.FROM_EMAIL || 'jeff@boolean.engineer',
   FROM_NAME: process.env.FROM_NAME || 'Wallet App',
-  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000'
+  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3001'
 };
 
 export default config;

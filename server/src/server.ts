@@ -4,6 +4,9 @@ import connectDB from './config/database';
 import config from './config/env';
 import configureApp from './config/app';
 import { logger } from './utils/logger';
+import swaggerUi from 'swagger-ui-express';
+import { specs } from './config/swagger';
+import cors from 'cors';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -14,6 +17,16 @@ import categoryRoutes from './routes/categories';
 
 // Create Express app
 const app: Express = express();
+// Enable CORS with default settings
+app.use(cors());
+
+
+const corsOptions = {
+  origin: 'http://localhost:3001', 
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, // Allow cookies
+};
+app.use(cors(corsOptions));
 
 // Connect to MongoDB
 connectDB();
@@ -30,6 +43,12 @@ app.use('/api/v1/accounts', accountRoutes);
 app.use('/api/v1/transactions', transactionRoutes);
 app.use('/api/v1/budgets', budgetRoutes);
 app.use('/api/v1/categories', categoryRoutes);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Wallet App API Documentation',
+}));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
