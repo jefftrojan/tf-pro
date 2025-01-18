@@ -16,7 +16,7 @@ import budgetRoutes from './routes/budgets';
 import categoryRoutes from './routes/categories';
 
 // Create Express app
-const app = express();
+const app: Express = express();
 // Enable CORS with default settings
 app.use(cors());
 
@@ -79,7 +79,7 @@ const server = app.listen(PORT, () => {
 });
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (err) => {
+process.on('unhandledRejection', (err: Error) => {
   logger.error('Unhandled Rejection:', err);
   // Close server & exit process
   server.close(() => {
@@ -89,7 +89,7 @@ process.on('unhandledRejection', (err) => {
 });
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', (err: Error) => {
   logger.error('Uncaught Exception:', err);
   // Close server & exit process
   server.close(() => {
