@@ -110,7 +110,7 @@ interface BudgetAlert {
 }
 
 // API client setup
-const baseURL = 'http://localhost:5001/api/v1';
+const baseURL = 'https://wallet-backend-f7dx.onrender.com/api/v1';
 
 const api = axios.create({
   baseURL,
