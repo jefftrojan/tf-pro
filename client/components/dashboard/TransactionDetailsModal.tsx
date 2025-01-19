@@ -7,47 +7,17 @@ import {
   Download, 
   Edit, 
   Trash2, 
-  ExternalLink, 
   ArrowUpRight, 
   ArrowDownRight,
-  Tag,
   Loader2
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import TransactionForm from '@/components/forms/TransactionForm';
-
-interface Transaction {
-  _id: string;
-  type: 'income' | 'expense';
-  amount: number;
-  category: string;
-  description: string;
-  date: string;
-  account: string;
-  status: 'completed' | 'pending' | 'failed';
-  reference?: string;
-  notes?: string;
-  receipt?: string;
-  tags?: string[];
-}
-
-interface Account {
-  _id: string;
-  name: string;
-  type: string;
-  balance: number;
-  currency?: string;
-}
-
-interface TransactionDetailsModalProps {
-  transaction: Transaction;
-  accounts: Account[];
-  onClose: () => void;
-  onDelete?: (id: string) => Promise<void>;
-  onUpdate?: (id: string, data: Partial<Transaction>) => Promise<void>;
-  isDeleting?: boolean;
-  isUpdating?: boolean;
-}
+import type { 
+  TransactionDetailsModalProps,
+  CreateTransactionPayload,
+  Transaction 
+} from '@/lib/types';
 
 export default function TransactionDetailsModal({
   transaction,
@@ -62,9 +32,9 @@ export default function TransactionDetailsModal({
   
   // Find associated account
   const accountId =
-typeof transaction.account === 'string'
-  ? transaction.account
-  : transaction.account?._id;
+    typeof transaction.account === 'string'
+      ? transaction.account
+      : transaction.account?._id;
   const account = accounts.find((a) => a._id === accountId);
 
   const handleDelete = async () => {
@@ -80,11 +50,18 @@ typeof transaction.account === 'string'
     }
   };
 
-  const handleUpdate = async (formData: Partial<Transaction>) => {
+  const handleUpdate = async (data: CreateTransactionPayload) => {
     if (!onUpdate) return;
     
     try {
-      await onUpdate(transaction._id, formData);
+      // Convert CreateTransactionPayload to Partial<Transaction>
+      const updateData: Partial<Transaction> = {
+        ...data,
+        receipt: data.receipt ? URL.createObjectURL(data.receipt) : transaction.receipt,
+        account: typeof data.account === 'string' ? data.account : data.account
+      };
+
+      await onUpdate(transaction._id, updateData);
       setIsEditMode(false);
     } catch (error) {
       console.error('Failed to update transaction:', error);
@@ -104,7 +81,6 @@ typeof transaction.account === 'string'
     );
   }
   
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Backdrop */}
@@ -151,8 +127,8 @@ typeof transaction.account === 'string'
           <div className="grid grid-cols-2 gap-6">
             <div>
               <p className="text-white/60 text-sm mb-1">Account</p>
-             <p> {account?.name || `Unknown Account (${transaction.account})`} </p>
-              </div>
+              <p> {account?.name || `Unknown Account (${transaction.account})`} </p>
+            </div>
             <div>
               <p className="text-white/60 text-sm mb-1">Type</p>
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full ${

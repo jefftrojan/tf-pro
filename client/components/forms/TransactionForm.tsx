@@ -1,4 +1,3 @@
-// components/forms/TransactionForm.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,44 +13,12 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react';
-
-interface Account {
-  _id: string;
-  name: string;
-  type: string;
-}
-
-interface Transaction {
-  _id: string;
-  type: 'income' | 'expense';
-  amount: number;
-  category: string;
-  account: string;
-  date: string;
-  description?: string;
-  tags?: string[];
-  receipt?: File | null;
-}
-
-interface TransactionFormData {
-  type: 'income' | 'expense';
-  amount: string;
-  category: string;
-  account: string;
-  date: string;
-  description: string;
-  tags: string[];
-  receipt: File | null;
-}
-
-interface TransactionFormProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (data: Partial<Transaction>) => Promise<void>;
-  accounts: Account[];
-  transaction?: Transaction;
-  isLoading?: boolean;
-}
+import type { 
+  TransactionFormProps, 
+  TransactionFormData,
+  CreateTransactionPayload,
+  Account
+} from '@/lib/types';
 
 const categories = [
   'Housing',
@@ -65,7 +32,7 @@ const categories = [
   'Education',
   'Income',
   'Others'
-];
+] as const;
 
 export default function TransactionForm({ 
   isOpen, 
@@ -97,11 +64,11 @@ export default function TransactionForm({
         type: transaction.type,
         amount: transaction.amount.toString(),
         category: transaction.category,
-        account: transaction.account,
+        account: typeof transaction.account === 'string' ? transaction.account : transaction.account._id,
         date: transaction.date,
         description: transaction.description || '',
         tags: transaction.tags || [],
-        receipt: transaction.receipt || null
+        receipt: null // Reset receipt on edit
       });
     }
   }, [transaction]);
@@ -136,19 +103,27 @@ export default function TransactionForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!validateForm()) {
       return;
     }
-
+  
     try {
-      const submitData = {
-        ...formData,
+      const submitData: CreateTransactionPayload = {
+        type: formData.type,
         amount: parseFloat(formData.amount),
-        tags: formData.tags.length > 0 ? formData.tags : undefined,
-        description: formData.description.trim() || undefined
+        category: formData.category,
+        account: formData.account,
+        date: formData.date,
+        description: formData.description.trim(),
+        tags: formData.tags.length > 0 ? formData.tags : undefined
       };
-
+  
+      // Only include receipt if a file is selected
+      if (formData.receipt) {
+        submitData.receipt = formData.receipt;
+      }
+  
       await onSubmit(submitData);
       onClose();
     } catch (err) {
@@ -276,26 +251,25 @@ export default function TransactionForm({
           </div>
 
           {/* Account */}
-          <div className="space-y-2">
-            <label className="text-sm text-white/60">Account</label>
-            <div className="relative">
-              <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-              <select
-                value={formData.account}
-                onChange={(e) => setFormData({ ...formData, account: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
-                required
-              >
-                <option value="">Select Account</option>
-                {Array.isArray(accounts) &&
-    accounts.map((account: any) => (
-      <option key={account._id} value={account._id}>
-        {account.name}
-      </option>
-    ))}
-              </select>
-            </div>
-          </div>
+           <div className="space-y-2">
+        <label className="text-sm text-white/60">Account</label>
+        <div className="relative">
+          <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+          <select
+            value={formData.account}
+            onChange={(e) => setFormData({ ...formData, account: e.target.value })}
+            className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
+            required
+          >
+            <option value="">Select Account</option>
+            {accounts.map((account: Account) => (
+              <option key={account._id} value={account._id}>
+                {account.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
 
           {/* Category */}
           <div className="space-y-2">

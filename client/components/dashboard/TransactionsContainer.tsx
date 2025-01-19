@@ -18,15 +18,27 @@ import TransactionDetailsModal from '@/components/dashboard/TransactionDetailsMo
 import { useTransactions } from '@/hooks/useTransactions';
 import { useAccounts } from '@/hooks/useAccounts';
 import { formatCurrency } from '@/lib/utils';
-import { Transaction, Account } from '@/lib/types';
+import type { 
+  Transaction as ApiTransaction, 
+  Account as ApiAccount,
+  CreateTransactionData,
+  
+} from '@/lib/api';
 
 interface TransactionFilters {
-  type: string;
+  type: 'all' | 'income' | 'expense';
   account: string;
   category: string;
   startDate: string;
   endDate: string;
 }
+
+// Extend the API Transaction type for UI needs
+type Transaction = ApiTransaction & {
+  account: string | { _id: string };
+};
+
+type Account = ApiAccount;
 
 export default function TransactionsContainer() {
   // State
@@ -58,7 +70,7 @@ export default function TransactionsContainer() {
   } = useAccounts();
 
   // Handle transaction creation
-  const handleCreateTransaction = async (formData: Partial<Transaction>) => {
+  const handleCreateTransaction = async (formData: Partial<CreateTransactionData>) => {
     try {
       // Validate required fields
       if (!formData.description || !formData.amount || !formData.type || !formData.account) {
@@ -83,7 +95,7 @@ export default function TransactionsContainer() {
   };
 
   // Handle transaction update
-  const handleUpdateTransaction = async (id: string, data: Partial<Transaction>) => {
+  const handleUpdateTransaction = async (id: string, data: Partial<CreateTransactionData>) => {
     try {
       await updateTransaction.mutate(
         { id, data },
@@ -118,11 +130,14 @@ export default function TransactionsContainer() {
   };
 
   // Filter transactions based on search query
-  const filteredTransactions = transactions.filter((transaction: Transaction) => {
+  const filteredTransactions = (transactions as Transaction[]).filter((transaction) => {
     if (!searchQuery) return true;
     
     const searchLower = searchQuery.toLowerCase();
-    const account = accounts.find(a => a._id === transaction.account);
+    const accountId = typeof transaction.account === 'string' 
+      ? transaction.account 
+      : transaction.account._id;
+    const account = accounts.find(a => a._id === accountId);
     
     return (
       transaction.description?.toLowerCase().includes(searchLower) ||
@@ -202,7 +217,7 @@ export default function TransactionsContainer() {
 
         <select
           value={filters.type}
-          onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+          onChange={(e) => setFilters({ ...filters, type: e.target.value as TransactionFilters['type'] })}
           className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
         >
           <option value="all">All Types</option>
@@ -216,7 +231,7 @@ export default function TransactionsContainer() {
           className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
         >
           <option value="all">All Accounts</option>
-          {accounts.map((account: Account) => (
+          {accounts.map((account) => (
             <option key={account._id} value={account._id}>
               {account.name}
             </option>
@@ -243,12 +258,11 @@ export default function TransactionsContainer() {
         ) : (
           <div className="divide-y divide-white/10">
             {filteredTransactions.map((transaction) => {
-const accountId =
-typeof transaction.account === 'string'
-  ? transaction.account
-  : transaction.account?._id;
-  const account = accounts.find((a) => a._id === accountId);
-             
+              const accountId = typeof transaction.account === 'string'
+                ? transaction.account
+                : transaction.account._id;
+              const account = accounts.find((a) => a._id === accountId);
+              
               return (
                 <div
                   key={transaction._id}
@@ -266,8 +280,7 @@ typeof transaction.account === 'string'
                     {new Date(transaction.date).toLocaleDateString()}
                   </div>
                   <div className="text-white">
-                  {account?.name || `Unknown Account (${transaction.account})`}
-
+                    {account?.name || `Unknown Account (${accountId})`}
                   </div>
                   <div className={`text-right font-medium ${
                     transaction.type === 'income' ? 'text-emerald-400' : 'text-rose-400'
