@@ -1,21 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
 import { transactions, accounts } from '@/lib/api';
+import type { 
+  Transaction, 
+  Account, 
+  ApiResponse 
+} from '@/lib/api';
+import { AxiosError } from 'axios';
 
 interface DateRange {
   startDate: string;
   endDate: string;
 }
 
-interface Transaction {
-  type: 'income' | 'expense';
-  amount: number;
+interface CategoryAmount {
   category: string;
-  date: string;
+  amount: number;
 }
 
-interface Account {
-  name: string;
-  balance: number;
+interface MonthlyTrend {
+  month: string;
+  income: number;
+  expenses: number;
 }
 
 interface ReportStats {
@@ -23,109 +28,117 @@ interface ReportStats {
   totalExpenses: number;
   totalSavings: number;
   savingsRate: number;
-  accountBalances: { name: string; balance: number }[];
-  incomeByCategory: { category: string; amount: number }[];
-  expensesByCategory: { category: string; amount: number }[];
-  monthlyTrends: {
-    month: string;
-    income: number;
-    expenses: number;
-  }[];
+  accountBalances: Array<Pick<Account, '_id' | 'name' | 'balance' | 'type' | 'currency'>>;
+  incomeByCategory: CategoryAmount[];
+  expensesByCategory: CategoryAmount[];
+  monthlyTrends: MonthlyTrend[];
+  transactions: Transaction[];
+}
+
+function calculateReportStats(
+  transactions: Transaction[], 
+  accounts: Account[]
+): ReportStats {
+  // Calculate totals
+  const totalIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalSavings = totalIncome - totalExpenses;
+  const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
+
+  // Calculate category breakdowns using reduce once for efficiency
+  const categoryTotals = transactions.reduce((acc, t) => {
+    const key = `${t.type}:${t.category}`;
+    acc[key] = (acc[key] || 0) + t.amount;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Extract income and expense categories
+  const incomeByCategory = Object.entries(categoryTotals)
+    .filter(([key]) => key.startsWith('income:'))
+    .map(([key, amount]) => ({
+      category: key.split(':')[1],
+      amount
+    }));
+
+  const expensesByCategory = Object.entries(categoryTotals)
+    .filter(([key]) => key.startsWith('expense:'))
+    .map(([key, amount]) => ({
+      category: key.split(':')[1],
+      amount
+    }));
+
+  // Calculate monthly trends
+  const monthlyTrends = Object.values(
+    transactions.reduce((acc, t) => {
+      const month = new Date(t.date).toISOString().slice(0, 7);
+      if (!acc[month]) {
+        acc[month] = { month, income: 0, expenses: 0 };
+      }
+      if (t.type === 'income') {
+        acc[month].income += t.amount;
+      } else {
+        acc[month].expenses += t.amount;
+      }
+      return acc;
+    }, {} as Record<string, MonthlyTrend>)
+  ).sort((a, b) => a.month.localeCompare(b.month));
+
+  return {
+    totalIncome,
+    totalExpenses,
+    totalSavings,
+    savingsRate,
+    accountBalances: accounts.map(account => ({
+      _id: account._id,
+      name: account.name,
+      balance: account.balance,
+      type: account.type,
+      currency: account.currency
+    })),
+    incomeByCategory,
+    expensesByCategory,
+    monthlyTrends,
+    transactions
+  };
 }
 
 export function useReports(dateRange: DateRange) {
   // Fetch transactions for the period
-  const transactionsQuery = useQuery({
+  const transactionsQuery = useQuery<ApiResponse<Transaction[]>, AxiosError>({
     queryKey: ['transactions', dateRange],
     queryFn: async () => {
       const response = await transactions.getAll({
         startDate: dateRange.startDate,
         endDate: dateRange.endDate
       });
-      return response.data.data;
+      return response.data;
     }
   });
 
   // Fetch accounts for balances
-  const accountsQuery = useQuery({
+  const accountsQuery = useQuery<ApiResponse<Account[]>, AxiosError>({
     queryKey: ['accounts'],
     queryFn: async () => {
       const response = await accounts.getAll();
-      return response.data.data;
+      return response.data;
     }
   });
 
   // Calculate report stats when data is available
   const reportStats: ReportStats | undefined = 
-    transactionsQuery.data && 
-    accountsQuery.data && 
-    Array.isArray(transactionsQuery.data) && 
-    Array.isArray(accountsQuery.data) 
-    ? {
-        // Calculate total income and expenses
-        totalIncome: transactionsQuery.data
-          .filter((t: Transaction) => t.type === 'income')
-          .reduce((sum, t) => sum + t.amount, 0),
-        
-        totalExpenses: transactionsQuery.data
-          .filter((t: Transaction) => t.type === 'expense')
-          .reduce((sum, t) => sum + t.amount, 0),
-
-        // Calculate savings and rate
-        get totalSavings() {
-          return this.totalIncome - this.totalExpenses;
-        },
-        get savingsRate() {
-          return this.totalIncome > 0 
-            ? (this.totalSavings / this.totalIncome) * 100 
-            : 0;
-        },
-
-        // Get account balances
-        accountBalances: accountsQuery.data.map((account: Account) => ({
-          name: account.name,
-          balance: account.balance
-        })),
-
-        // Calculate income by category
-        incomeByCategory: Object.entries(
-          transactionsQuery.data
-            .filter((t: Transaction) => t.type === 'income')
-            .reduce((acc, t) => {
-              acc[t.category] = (acc[t.category] || 0) + t.amount;
-              return acc;
-            }, {} as Record<string, number>)
-        ).map(([category, amount]) => ({ category, amount })),
-
-        // Calculate expenses by category
-        expensesByCategory: Object.entries(
-          transactionsQuery.data
-            .filter((t: Transaction) => t.type === 'expense')
-            .reduce((acc, t) => {
-              acc[t.category] = (acc[t.category] || 0) + t.amount;
-              return acc;
-            }, {} as Record<string, number>)
-        ).map(([category, amount]) => ({ category, amount })),
-
-        // Calculate monthly trends
-        monthlyTrends: Object.entries(
-          transactionsQuery.data.reduce((acc, t: Transaction) => {
-            const month = new Date(t.date).toISOString().slice(0, 7);
-            if (!acc[month]) {
-              acc[month] = { month, income: 0, expenses: 0 };
-            }
-            if (t.type === 'income') {
-              acc[month].income += t.amount;
-            } else {
-              acc[month].expenses += t.amount;
-            }
-            return acc;
-          }, {} as Record<string, { month: string; income: number; expenses: number }>)
+    transactionsQuery.data?.data && 
+    accountsQuery.data?.data
+      ? calculateReportStats(
+          transactionsQuery.data.data, 
+          accountsQuery.data.data
         )
-        .map(([_, data]) => data)
-        .sort((a, b) => a.month.localeCompare(b.month))
-      } 
-    : undefined;
+      : undefined;
 
   return {
     stats: reportStats,

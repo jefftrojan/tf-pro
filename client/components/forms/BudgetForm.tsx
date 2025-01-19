@@ -10,53 +10,20 @@ import {
   Loader2,
   Trash2 
 } from 'lucide-react';
+import { Budget } from '@/lib/types';
 import { getStatusColor } from '@/lib/utils';
 
 interface BudgetFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (formData: BudgetFormData) => Promise<void>;
+  onSubmit: (formData: any) => Promise<void>;
   onDelete?: (id: string) => Promise<void>;
-  budget?: Budget;
+  budget?: Budget | null;
   isLoading?: boolean;
   suggestedCategories?: Array<{ name: string; color: string; }>;
 }
 
-interface Budget {
-  _id: string;
-  category: string;
-  limit: string;
-  period: string;
-  startDate: string;
-  endDate: string;
-  notifications: boolean;
-  color?: string;
-}
-
-interface BudgetFormData {
-  category: string;
-  limit: string;
-  period: string;
-  startDate: string;
-  endDate: string;
-  notifications: boolean;
-  color?: string;
-}
-
 const periods = ['daily', 'weekly', 'monthly', 'yearly'];
-const categories = [
-  'Housing',
-  'Transportation',
-  'Food & Dining',
-  'Utilities',
-  'Entertainment',
-  'Healthcare',
-  'Shopping',
-  'Personal Care',
-  'Education',
-  'Savings',
-  'Others'
-];
 
 export default function BudgetForm({ 
   isOpen, 
@@ -67,14 +34,18 @@ export default function BudgetForm({
   isLoading = false,
   suggestedCategories = []
 }: BudgetFormProps) {
-  const [formData, setFormData] = useState<BudgetFormData>({
+  const [formData, setFormData] = useState<any>({
     category: '',
     limit: '',
     period: 'monthly',
     startDate: new Date().toISOString().split('T')[0],
-    endDate: '',
+    endDate: (() => {
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+      return endDate.toISOString().split('T')[0];
+    })(),
     notifications: true,
-    color: '#' + Math.floor(Math.random()*16777215).toString(16) // Random color
+    color: '#' + Math.floor(Math.random()*16777215).toString(16)
   });
   const [error, setError] = useState('');
 
@@ -84,11 +55,16 @@ export default function BudgetForm({
       setFormData({
         category: budget.category,
         limit: budget.limit.toString(),
-        period: budget.period,
-        startDate: budget.startDate,
-        endDate: budget.endDate,
-        notifications: budget.notifications,
-        color: budget.color
+        period: 'monthly', // Default period as it's not in the Budget type
+        startDate: budget.period?.startDate || new Date().toISOString().split('T')[0],
+        endDate: budget.period?.endDate || (() => {
+          const endDate = new Date();
+          endDate.setMonth(endDate.getMonth() + 1);
+          return endDate.toISOString().split('T')[0];
+        })(),
+        notifications: true, // Default value as it's not in the Budget type
+        color: budget.color,
+        description: budget.description
       });
     }
   }, [budget]);
@@ -130,16 +106,20 @@ export default function BudgetForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!validateForm()) {
       return;
     }
-
+  
     try {
-      // Convert limit to number for submission
+      // Prepare data to match the expected format
       const submitData = {
         ...formData,
-        limit: parseFloat(formData.limit)
+        limit: parseFloat(formData.limit),
+        period: {
+          startDate: formData.startDate,
+          endDate: formData.endDate
+        }
       };
 
       await onSubmit(submitData);
@@ -149,52 +129,9 @@ export default function BudgetForm({
     }
   };
 
-  // Set default end date based on period
-  const handlePeriodChange = (period: string) => {
-    const startDate = new Date(formData.startDate);
-    let endDate = new Date(startDate);
-
-    switch (period) {
-      case 'daily':
-        endDate.setDate(startDate.getDate() + 1);
-        break;
-      case 'weekly':
-        endDate.setDate(startDate.getDate() + 7);
-        break;
-      case 'monthly':
-        endDate.setMonth(startDate.getMonth() + 1);
-        break;
-      case 'yearly':
-        endDate.setFullYear(startDate.getFullYear() + 1);
-        break;
-    }
-
-    setFormData({
-      ...formData,
-      period,
-      endDate: endDate.toISOString().split('T')[0]
-    });
-  };
-
   const handleStartDateChange = (date: string) => {
-    const startDate = new Date(date);
-    let endDate = new Date(startDate);
-
-    // Adjust end date based on period
-    switch (formData.period) {
-      case 'daily':
-        endDate.setDate(startDate.getDate() + 1);
-        break;
-      case 'weekly':
-        endDate.setDate(startDate.getDate() + 7);
-        break;
-      case 'monthly':
-        endDate.setMonth(startDate.getMonth() + 1);
-        break;
-      case 'yearly':
-        endDate.setFullYear(startDate.getFullYear() + 1);
-        break;
-    }
+    let endDate = new Date(date);
+    endDate.setMonth(endDate.getMonth() + 1);
 
     setFormData({
       ...formData,
@@ -248,7 +185,14 @@ export default function BudgetForm({
                 disabled={isLoading}
               >
                 <option value="">Select Category</option>
-                {(suggestedCategories.length > 0 ? suggestedCategories.map(c => c.name) : categories).map((category) => (
+                {(suggestedCategories.length > 0 
+                  ? suggestedCategories.map(c => c.name) 
+                  : [
+                    'Housing', 'Transportation', 'Food & Dining', 
+                    'Utilities', 'Entertainment', 'Healthcare', 
+                    'Shopping', 'Personal Care', 'Education', 
+                    'Savings', 'Others'
+                  ]).map((category) => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
@@ -270,28 +214,6 @@ export default function BudgetForm({
                 required
                 disabled={isLoading}
               />
-            </div>
-          </div>
-
-          {/* Period */}
-          <div className="space-y-2">
-            <label className="text-sm text-white/60">Budget Period</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {periods.map((period) => (
-                <button
-                  key={period}
-                  type="button"
-                  onClick={() => handlePeriodChange(period)}
-                  disabled={isLoading}
-                  className={`px-4 py-2 rounded-lg border capitalize transition-colors ${
-                    formData.period === period
-                      ? 'bg-white/20 border-white/30 text-white'
-                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {period}
-                </button>
-              ))}
             </div>
           </div>
 
@@ -326,18 +248,6 @@ export default function BudgetForm({
               </div>
             </div>
           </div>
-
-          {/* Notifications */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.notifications}
-              onChange={(e) => setFormData({ ...formData, notifications: e.target.checked })}
-              disabled={isLoading}
-              className="rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500 disabled:opacity-50"
-            />
-            <span className="text-white">Enable budget notifications</span>
-          </label>
 
           {/* Action Buttons */}
           <div className="flex gap-4">

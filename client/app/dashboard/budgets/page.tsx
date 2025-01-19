@@ -17,6 +17,7 @@ import BudgetForm from '@/components/forms/BudgetForm';
 import { useBudgets } from '@/hooks/useBudgets';
 import { formatCurrency, exportToExcel, calculateBudgetStatus, getStatusColor } from '@/lib/utils';
 import { budgetCategories, periodOptions } from '@/lib/constants/budgets';
+import { Budget } from '@/lib/types';
 
 interface DateRange {
   startDate: string;

@@ -37,8 +37,8 @@ export default function RegisterForm() {
         password: formData.password
       });
       
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
+      if (response.data.data.token) {
+        localStorage.setItem('token', response.data.data.token);
         router.push('/dashboard');
       }
     } catch (err: any) {

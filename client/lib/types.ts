@@ -22,3 +22,31 @@ export interface Account {
     tags?: string[];
   }
 
+  export interface Budget {
+    _id: string;
+    category: string;
+    limit: number;
+    spent: number;
+    color: string;
+    description?: string;
+    period?: {
+      startDate: string;
+      endDate: string;
+    };
+    createdAt: string;
+    updatedAt: string;
+  }
+  
+  export interface BudgetStats {
+    totalBudget: number;
+    totalSpent: number;
+    averageUsage: number;
+    overBudgetCount: number;
+  }
+  
+  export interface BudgetAlert {
+    category: string;
+    message: string;
+    type: 'warning' | 'danger';
+    percentage: number;
+  }

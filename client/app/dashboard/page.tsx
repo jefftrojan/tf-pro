@@ -5,6 +5,7 @@ import RecentTransactions from '@/components/dashboard/RecentActivity'; // Fixed
 import BudgetOverview from '@/components/dashboard/BudgetContainer';
 import SpendingChart from '@/components/dashboard/SpendingChart';
 import { useReports } from '@/hooks/useReports';
+import { formatCurrency } from '@/lib/utils';
 
 const dateRanges = [
   { label: 'This Month', value: 'current' },
@@ -130,10 +131,44 @@ export default function DashboardPage() {
       )}
 
       {/* Recent Transactions */}
-      <div className="backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20">
-        <h2 className="text-xl font-semibold text-white mb-6">Recent Transactions</h2>
-        <RecentTransactions />
-      </div>
-    </div>
+     <div className="backdrop-blur-lg bg-white/10 rounded-xl border border-white/20">
+                 <div className="p-6 border-b border-white/10">
+                   <h3 className="text-lg font-medium text-white">Recent Transactions</h3>
+                 </div>
+                 <div className="overflow-x-auto">
+                   <table className="w-full">
+                     <thead>
+                       <tr className="text-left text-white/60 text-sm">
+                         <th className="px-6 py-4">Date</th>
+                         <th className="px-6 py-4">Description</th>
+                         <th className="px-6 py-4">Category</th>
+                         <th className="px-6 py-4">Account</th>
+                         <th className="px-6 py-4 text-right">Amount</th>
+                       </tr>
+                     </thead>
+                     <tbody className="divide-y divide-white/10">
+                       {stats?.transactions?.slice(0, 5).map((transaction) => (
+                         <tr key={transaction._id} className="text-white">
+                           <td className="px-6 py-4">
+                             {new Date(transaction.date).toLocaleDateString()}
+                           </td>
+                           <td className="px-6 py-4">{transaction.description}</td>
+                           <td className="px-6 py-4">{transaction.category}</td>
+                           <td className="px-6 py-4">
+                             {stats.accountBalances.find(a => a._id === transaction.account)?.name}
+                           </td>
+                           <td className={`px-6 py-4 text-right font-medium ${
+                             transaction.type === 'income' ? 'text-emerald-400' : 'text-rose-400'
+                           }`}>
+                             {transaction.type === 'income' ? '+' : '-'}
+                             {formatCurrency(transaction.amount)}
+                           </td>
+                         </tr>
+                       ))}
+                     </tbody>
+                   </table>
+                 </div>
+               </div>
+               </div>
   );
 }

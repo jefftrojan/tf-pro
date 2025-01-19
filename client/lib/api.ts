@@ -2,25 +2,25 @@
 import axios, { AxiosError, AxiosResponse } from 'axios';
 
 // Base interfaces
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   success: boolean;
   data: T;
   message?: string;
 }
 
-// Auth interfaces
-interface LoginData {
+// Auth types
+export interface LoginData {
   email: string;
   password: string;
 }
 
-interface RegisterData {
+export interface RegisterData {
   name: string;
   email: string;
   password: string;
 }
 
-interface User {
+export interface User {
   _id: string;
   name: string;
   email: string;
@@ -28,8 +28,8 @@ interface User {
   updatedAt: string;
 }
 
-// Account interfaces
-interface Account {
+// Account types
+export interface Account {
   _id: string;
   name: string;
   type: string;
@@ -40,15 +40,15 @@ interface Account {
   updatedAt: string;
 }
 
-interface CreateAccountData {
+export interface CreateAccountData {
   name: string;
   type: string;
   balance: number;
   currency?: string;
 }
 
-// Transaction interfaces
-interface Transaction {
+// Transaction types
+export interface Transaction {
   _id: string;
   type: 'income' | 'expense';
   amount: number;
@@ -65,7 +65,7 @@ interface Transaction {
   updatedAt: string;
 }
 
-interface CreateTransactionData {
+export interface CreateTransactionData {
   type: 'income' | 'expense';
   amount: number;
   description: string;
@@ -77,8 +77,8 @@ interface CreateTransactionData {
   tags?: string[];
 }
 
-// Budget interfaces
-interface Budget {
+// Budget types
+export interface Budget {
   _id: string;
   category: string;
   limit: number;
@@ -89,20 +89,20 @@ interface Budget {
   updatedAt: string;
 }
 
-interface CreateBudgetData {
+export interface CreateBudgetData {
   category: string;
   limit: number;
   color?: string;
 }
 
-interface BudgetStats {
+export interface BudgetStats {
   totalBudget: number;
   totalSpent: number;
   remainingBudget: number;
   percentageSpent: number;
 }
 
-interface BudgetAlert {
+export interface BudgetAlert {
   type: string;
   message: string;
   category?: string;

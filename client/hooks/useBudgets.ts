@@ -15,7 +15,7 @@ export function useBudgets(dateRange?: DateRange) {
   const budgetsQuery = useQuery({
     queryKey: ['budgets', dateRange],
     queryFn: async () => {
-      const response = await budgets.getAll(dateRange);
+      const response = await budgets.getAll();
       return response.data;
     },
   });
@@ -24,7 +24,7 @@ export function useBudgets(dateRange?: DateRange) {
   const statsQuery = useQuery({
     queryKey: ['budgetStats', dateRange],
     queryFn: async () => {
-      const response = await budgets.getStats(dateRange);
+      const response = await budgets.getStats();
       return response.data;
     },
   });
@@ -33,7 +33,7 @@ export function useBudgets(dateRange?: DateRange) {
   const alertsQuery = useQuery({
     queryKey: ['budgetAlerts', dateRange],
     queryFn: async () => {
-      const response = await budgets.getAlerts(dateRange);
+      const response = await budgets.getAlerts();
       return response.data;
     },
   });
