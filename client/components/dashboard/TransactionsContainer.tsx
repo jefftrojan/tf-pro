@@ -5,12 +5,9 @@ import { useState } from 'react';
 import { 
   PlusCircle, 
   Search, 
-  Filter, 
   Download,
   ArrowUpRight,
   ArrowDownRight,
-  Calendar,
-  FileText, 
   Loader2 
 } from 'lucide-react';
 import TransactionForm from '@/components/forms/TransactionForm';
@@ -21,9 +18,15 @@ import { formatCurrency } from '@/lib/utils';
 import type { 
   Transaction as ApiTransaction, 
   Account as ApiAccount,
-  CreateTransactionData,
-  
-} from '@/lib/api';
+  CreateTransactionPayload
+} from '@/lib/types';
+
+// Extend the API Transaction type for UI needs
+type Transaction = ApiTransaction & {
+  account: string | { _id: string };
+};
+
+type Account = ApiAccount;
 
 interface TransactionFilters {
   type: 'all' | 'income' | 'expense';
@@ -32,13 +35,6 @@ interface TransactionFilters {
   startDate: string;
   endDate: string;
 }
-
-// Extend the API Transaction type for UI needs
-type Transaction = ApiTransaction & {
-  account: string | { _id: string };
-};
-
-type Account = ApiAccount;
 
 export default function TransactionsContainer() {
   // State
@@ -70,7 +66,7 @@ export default function TransactionsContainer() {
   } = useAccounts();
 
   // Handle transaction creation
-  const handleCreateTransaction = async (formData: Partial<CreateTransactionData>) => {
+  const handleCreateTransaction = async (formData: CreateTransactionPayload) => {
     try {
       // Validate required fields
       if (!formData.description || !formData.amount || !formData.type || !formData.account) {
@@ -95,10 +91,19 @@ export default function TransactionsContainer() {
   };
 
   // Handle transaction update
-  const handleUpdateTransaction = async (id: string, data: Partial<CreateTransactionData>) => {
+  const handleUpdateTransaction = async (id: string, data: CreateTransactionPayload) => {
     try {
+      // Convert CreateTransactionPayload to the format expected by the API
+      const updateData = {
+        ...data,
+        account: typeof data.account === 'object' ? data.account._id : data.account,
+        receipt: data.receipt instanceof File 
+          ? data.receipt 
+          : undefined
+      };
+
       await updateTransaction.mutate(
-        { id, data },
+        { id, data: updateData },
         {
           onSuccess: () => {
             setSelectedTransaction(null);
