@@ -1,52 +1,58 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { 
   PlusCircle, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  DollarSign, 
+  TrendingUp, 
+  MoreVertical, 
   Wallet, 
   CreditCard, 
-  PiggyBank, 
-  ArrowUpRight, 
-  ArrowDownRight,
-  DollarSign,
-  TrendingUp,
-  MoreVertical 
+  PiggyBank,
+  Loader2 
 } from 'lucide-react';
-import { accounts } from '@/lib/api';
+import { useAccounts } from '@/hooks/useAccounts';
 import { formatCurrency } from '@/lib/utils';
+import AccountForm from '@/components/forms/AccountForm';
 
 interface Account {
   _id: string;
   name: string;
   type: string;
   balance: number;
-  currency: string;
+  currency?: string;
+  monthlyIncome?: number;
+  monthlyExpenses?: number;
 }
 
 export default function AccountsOverview() {
-  const [loading, setLoading] = useState(true);
-  const [accountsData, setAccountsData] = useState<Account[]>([]);
-  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  
+  const {
+    accounts,
+    isLoading,
+    isError,
+    createAccount,
+    updateAccount,
+    deleteAccount,
+    error
+  } = useAccounts();
 
-  useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const response = await accounts.getAll();
-        setAccountsData(response.data.data);
-      } catch (error) {
-        console.error('Error fetching accounts:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const totalBalance = Array.isArray(accounts)
+    ? accounts.reduce((sum, account) => sum + (account.balance || 0), 0)
+    : 0;
 
-    fetchAccounts();
-  }, []);
-
-  const totalBalance = accountsData.reduce((sum, account) => sum + account.balance, 0);
-  const totalIncome = 5230.50; // todo: would calculate this from transactions
-  const totalExpenses = 1890.75; // todo: would calculate this from transactions
+  // Calculate total income and expenses from accounts
+  const totalIncome = Array.isArray(accounts)
+    ? accounts.reduce((sum, account) => sum + (account.monthlyIncome || 0), 0)
+    : 0;
+  
+  const totalExpenses = Array.isArray(accounts)
+    ? accounts.reduce((sum, account) => sum + (account.monthlyExpenses || 0), 0)
+    : 0;
 
   const getAccountIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -61,7 +67,54 @@ export default function AccountsOverview() {
     }
   };
 
-  if (loading) {
+  const handleCreateAccount = async (formData: Partial<Account>) => {
+    try {
+      if (!formData.name || !formData.type || formData.balance === undefined) {
+        throw new Error('Missing required fields');
+      }
+      await createAccount.mutate({
+        name: formData.name,
+        type: formData.type,
+        balance: formData.balance,
+        currency: formData.currency || 'USD'
+      });
+      setIsFormOpen(false);
+      setSelectedAccount(null);
+    } catch (error) {
+      console.error('Failed to create account:', error);
+    }
+  };
+
+  const handleUpdateAccount = async (formData: Partial<Account>) => {
+    if (selectedAccount?._id) {
+      try {
+        await updateAccount.mutate({
+          id: selectedAccount._id,
+          data: {
+            ...formData
+          }
+        });
+        setIsFormOpen(false);
+        setSelectedAccount(null);
+      } catch (error) {
+        console.error('Failed to update account:', error);
+      }
+    }
+  };
+
+  const handleDeleteAccount = async (accountId: string) => {
+    if (confirm('Are you sure you want to delete this account?')) {
+      try {
+        await deleteAccount.mutate(accountId);
+        setIsFormOpen(false);
+        setSelectedAccount(null);
+      } catch (error) {
+        console.error('Failed to delete account:', error);
+      }
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3].map((i) => (
@@ -78,49 +131,46 @@ export default function AccountsOverview() {
     );
   }
 
+  if (isError) {
+    return (
+      <div className="text-white text-center p-6 backdrop-blur-lg bg-white/10 rounded-2xl border border-white/20">
+        <p className="text-red-400">Error loading accounts: {error?.message}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="mt-4 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Total Balance */}
         <div className="backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white/60 font-medium">Total Balance</h3>
-            <DollarSign className="h-5 w-5 text-white/60" />
-          </div>
-          <p className="text-3xl font-bold text-white mb-4">
-            {formatCurrency(totalBalance)}
-          </p>
-          <div className="flex items-center text-emerald-400">
+          <h3 className="text-white/60 font-medium">Total Balance</h3>
+          <p className="text-3xl font-bold text-white mb-4">{formatCurrency(totalBalance)}</p>
+          <div className="text-emerald-400 flex items-center">
             <ArrowUpRight className="h-4 w-4 mr-1" />
-            <span className="text-sm">+2.5% from last month</span>
           </div>
         </div>
-
+        {/* Income */}
         <div className="backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white/60 font-medium">Monthly Income</h3>
-            <ArrowUpRight className="h-5 w-5 text-emerald-400" />
-          </div>
-          <p className="text-3xl font-bold text-white mb-4">
-            {formatCurrency(totalIncome)}
-          </p>
-          <div className="flex items-center text-emerald-400">
+          <h3 className="text-white/60 font-medium">Monthly Income</h3>
+          <p className="text-3xl font-bold text-white mb-4">{formatCurrency(totalIncome)}</p>
+          <div className="text-emerald-400 flex items-center">
             <TrendingUp className="h-4 w-4 mr-1" />
-            <span className="text-sm">+12% from last month</span>
           </div>
         </div>
-
+        {/* Expenses */}
         <div className="backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white/60 font-medium">Monthly Expenses</h3>
-            <ArrowDownRight className="h-5 w-5 text-rose-400" />
-          </div>
-          <p className="text-3xl font-bold text-white mb-4">
-            {formatCurrency(totalExpenses)}
-          </p>
-          <div className="flex items-center text-rose-400">
-            <TrendingUp className="h-4 w-4 mr-1" />
-            <span className="text-sm">-8% from last month</span>
+          <h3 className="text-white/60 font-medium">Monthly Expenses</h3>
+          <p className="text-3xl font-bold text-white mb-4">{formatCurrency(totalExpenses)}</p>
+          <div className="text-rose-400 flex items-center">
+            <ArrowDownRight className="h-4 w-4 mr-1" />
           </div>
         </div>
       </div>
@@ -129,61 +179,72 @@ export default function AccountsOverview() {
       <div className="backdrop-blur-lg bg-white/10 rounded-2xl p-6 border border-white/20">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-white">Your Accounts</h2>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors">
-            <PlusCircle className="h-5 w-5" />
-            <span>Add Account</span>
+          <button 
+            onClick={() => setIsFormOpen(true)}
+            disabled={createAccount.isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white disabled:opacity-50"
+          >
+            {createAccount.isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <PlusCircle className="h-5 w-5" />
+            )}
+            Add Account
           </button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {accountsData.map((account) => (
-            <Link
-              key={account._id}
-              href={`/dashboard/accounts/${account._id}`}
-              className="group backdrop-blur-lg bg-white/5 hover:bg-white/10 rounded-xl p-4 border border-white/10 hover:border-white/20 transition-all"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 rounded-lg text-white">
-                    {getAccountIcon(account.type)}
+        {accounts.length === 0 ? (
+          <div className="text-center py-12 text-white/60">
+            <p>No accounts found. Create your first account to get started!</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {accounts.map((account) => (
+              <div
+                key={account._id}
+                className="group backdrop-blur-lg bg-white/5 hover:bg-white/10 rounded-xl p-4 border border-white/10"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/10 rounded-lg text-white">
+                      {getAccountIcon(account.type)}
+                    </div>
+                    <div>
+                      <h3 className="text-white font-medium">{account.name}</h3>
+                      <p className="text-sm text-white/60 capitalize">{account.type}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-medium text-white group-hover:text-white/90">
-                      {account.name}
-                    </h3>
-                    <p className="text-sm text-white/60 capitalize">{account.type}</p>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedAccount(account);
+                      setIsFormOpen(true);
+                    }}
+                    className="p-2 hover:bg-white/10 rounded-lg"
+                  >
+                    <MoreVertical className="h-5 w-5 text-white/60" />
+                  </button>
                 </div>
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setSelectedAccount(account._id);
-                  }}
-                  className="p-1 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <MoreVertical className="h-5 w-5 text-white/60" />
-                </button>
-              </div>
-              
-              <div className="flex items-center justify-between">
                 <p className="text-xl font-semibold text-white">
                   {formatCurrency(account.balance, account.currency)}
                 </p>
-                <div className="flex items-center text-emerald-400 text-sm">
-                  <ArrowUpRight className="h-4 w-4 mr-1" />
-                  <span>+2.5%</span>
-                </div>
               </div>
-            </Link>
-          ))}
-
-          {/* Add Account Card */}
-          <button className="group h-full min-h-[160px] backdrop-blur-lg bg-white/5 hover:bg-white/10 rounded-xl p-4 border border-dashed border-white/20 hover:border-white/40 transition-all flex flex-col items-center justify-center gap-3 text-white/60 hover:text-white">
-            <PlusCircle className="h-8 w-8" />
-            <span className="font-medium">Add New Account</span>
-          </button>
-        </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Account Form Modal */}
+      <AccountForm
+        isOpen={isFormOpen}
+        onClose={() => {
+          setIsFormOpen(false);
+          setSelectedAccount(null);
+        }}
+        account={selectedAccount}
+        onSubmit={selectedAccount ? handleUpdateAccount : handleCreateAccount}
+        onDelete={selectedAccount ? () => handleDeleteAccount(selectedAccount._id) : undefined}
+        isLoading={createAccount.isLoading || updateAccount.isLoading}
+      />
     </div>
   );
 }
