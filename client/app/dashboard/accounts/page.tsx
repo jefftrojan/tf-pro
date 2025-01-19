@@ -23,6 +23,11 @@ export default function AccountsOverview() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   
+  // Calculate current month's date range
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  
   const {
     accounts = [],
     isLoading: isLoadingAccounts,
@@ -37,7 +42,8 @@ export default function AccountsOverview() {
     transactions = [],
     isLoading: isLoadingTransactions
   } = useTransactions({
-    timeframe: 'month' // Get current month's transactions
+    startDate: startOfMonth.toISOString(),
+    endDate: endOfMonth.toISOString()
   });
 
   const isLoading = isLoadingAccounts || isLoadingTransactions;
@@ -72,7 +78,7 @@ export default function AccountsOverview() {
     }
   };
 
-  const handleCreateAccount = async (formData: Omit<Account, '_id'>) => {
+  const handleCreateAccount = async (formData: Partial<Account>) => {
     try {
       if (!formData.name || !formData.type || formData.balance === undefined) {
         throw new Error('Missing required fields');
@@ -90,7 +96,7 @@ export default function AccountsOverview() {
     }
   };
 
-  const handleUpdateAccount = async (formData: Partial<Omit<Account, '_id'>>) => {
+  const handleUpdateAccount = async (formData: Partial<Account>) => {
     if (selectedAccount?._id) {
       try {
         await updateAccount.mutate({
@@ -116,7 +122,7 @@ export default function AccountsOverview() {
       }
     }
   };
-  
+
   if (isLoading) {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -184,10 +190,10 @@ export default function AccountsOverview() {
           <h2 className="text-xl font-semibold text-white">Your Accounts</h2>
           <button 
             onClick={() => setIsFormOpen(true)}
-            disabled={createAccount.isLoading}
+            disabled={createAccount.isPending}
             className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white disabled:opacity-50"
           >
-            {createAccount.isLoading ? (
+            {createAccount.isPending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <PlusCircle className="h-5 w-5" />
@@ -246,7 +252,7 @@ export default function AccountsOverview() {
         account={selectedAccount}
         onSubmit={selectedAccount ? handleUpdateAccount : handleCreateAccount}
         onDelete={selectedAccount ? () => handleDeleteAccount(selectedAccount._id) : undefined}
-        isLoading={createAccount.isLoading || updateAccount.isLoading}
+        isLoading={createAccount.isPending || updateAccount.isPending}
       />
     </div>
   );
