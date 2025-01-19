@@ -5,42 +5,19 @@ import {
   X, 
   DollarSign, 
   Calendar,
-  Bell,
   Tag,
   Loader2,
   Trash2 
 } from 'lucide-react';
-import { getStatusColor } from '@/lib/utils';
+import { budgets } from '@/lib/api';
+import { Budget, CreateBudgetData } from '@/lib/types';
 
 interface BudgetFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (formData: BudgetFormData) => Promise<void>;
-  onDelete?: (id: string) => Promise<void>;
+  onSubmit?: (data: Budget) => void;
   budget?: Budget;
   isLoading?: boolean;
-  suggestedCategories?: Array<{ name: string; color: string; }>;
-}
-
-interface Budget {
-  _id: string;
-  category: string;
-  limit: string;
-  period: string;
-  startDate: string;
-  endDate: string;
-  notifications: boolean;
-  color?: string;
-}
-
-interface BudgetFormData {
-  category: string;
-  limit: string;
-  period: string;
-  startDate: string;
-  endDate: string;
-  notifications: boolean;
-  color?: string;
 }
 
 const periods = ['daily', 'weekly', 'monthly', 'yearly'];
@@ -62,18 +39,12 @@ export default function BudgetForm({
   isOpen, 
   onClose, 
   onSubmit,
-  onDelete,
   budget,
   isLoading = false,
-  suggestedCategories = []
 }: BudgetFormProps) {
-  const [formData, setFormData] = useState<BudgetFormData>({
+  const [formData, setFormData] = useState<CreateBudgetData>({
     category: '',
-    limit: '',
-    period: 'monthly',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: '',
-    notifications: true,
+    limit: 0,
     color: '#' + Math.floor(Math.random()*16777215).toString(16) // Random color
   });
   const [error, setError] = useState('');
@@ -83,11 +54,7 @@ export default function BudgetForm({
     if (budget) {
       setFormData({
         category: budget.category,
-        limit: budget.limit.toString(),
-        period: budget.period,
-        startDate: budget.startDate,
-        endDate: budget.endDate,
-        notifications: budget.notifications,
+        limit: budget.limit,
         color: budget.color
       });
     }
@@ -101,27 +68,8 @@ export default function BudgetForm({
       return false;
     }
 
-    const limitNum = parseFloat(formData.limit);
-    if (isNaN(limitNum) || limitNum <= 0) {
+    if (formData.limit <= 0) {
       setError('Please enter a valid budget limit');
-      return false;
-    }
-
-    if (!formData.startDate) {
-      setError('Please select a start date');
-      return false;
-    }
-
-    if (!formData.endDate) {
-      setError('Please select an end date');
-      return false;
-    }
-
-    // Validate date range
-    const start = new Date(formData.startDate);
-    const end = new Date(formData.endDate);
-    if (end <= start) {
-      setError('End date must be after start date');
       return false;
     }
 
@@ -136,71 +84,44 @@ export default function BudgetForm({
     }
 
     try {
-      // Convert limit to number for submission
-      const submitData = {
-        ...formData,
-        limit: parseFloat(formData.limit)
-      };
+      let response;
+      if (budget) {
+        // Update existing budget
+        response = await budgets.update(budget._id, formData);
+      } else {
+        // Create new budget
+        response = await budgets.create(formData);
+      }
 
-      await onSubmit(submitData);
-      onClose();
+      if (response.data) {
+        onSubmit?.(response.data);
+        onClose();
+      } else {
+        setError(response.message || 'Failed to submit budget');
+      }
     } catch (err: any) {
-      setError(err.message || 'Failed to submit budget');
+      console.error('Budget submission error:', err);
+      setError(
+        err.response?.data?.message || 
+        err.message || 
+        'Failed to submit budget'
+      );
     }
   };
 
-  // Set default end date based on period
-  const handlePeriodChange = (period: string) => {
-    const startDate = new Date(formData.startDate);
-    let endDate = new Date(startDate);
-
-    switch (period) {
-      case 'daily':
-        endDate.setDate(startDate.getDate() + 1);
-        break;
-      case 'weekly':
-        endDate.setDate(startDate.getDate() + 7);
-        break;
-      case 'monthly':
-        endDate.setMonth(startDate.getMonth() + 1);
-        break;
-      case 'yearly':
-        endDate.setFullYear(startDate.getFullYear() + 1);
-        break;
+  const handleDelete = async () => {
+    if (budget && window.confirm('Are you sure you want to delete this budget?')) {
+      try {
+        await budgets.delete(budget._id);
+        onClose();
+      } catch (err: any) {
+        setError(
+          err.response?.data?.message || 
+          err.message || 
+          'Failed to delete budget'
+        );
+      }
     }
-
-    setFormData({
-      ...formData,
-      period,
-      endDate: endDate.toISOString().split('T')[0]
-    });
-  };
-
-  const handleStartDateChange = (date: string) => {
-    const startDate = new Date(date);
-    let endDate = new Date(startDate);
-
-    // Adjust end date based on period
-    switch (formData.period) {
-      case 'daily':
-        endDate.setDate(startDate.getDate() + 1);
-        break;
-      case 'weekly':
-        endDate.setDate(startDate.getDate() + 7);
-        break;
-      case 'monthly':
-        endDate.setMonth(startDate.getMonth() + 1);
-        break;
-      case 'yearly':
-        endDate.setFullYear(startDate.getFullYear() + 1);
-        break;
-    }
-
-    setFormData({
-      ...formData,
-      startDate: date,
-      endDate: endDate.toISOString().split('T')[0]
-    });
   };
 
   if (!isOpen) return null;
@@ -248,7 +169,7 @@ export default function BudgetForm({
                 disabled={isLoading}
               >
                 <option value="">Select Category</option>
-                {(suggestedCategories.length > 0 ? suggestedCategories.map(c => c.name) : categories).map((category) => (
+                {categories.map((category) => (
                   <option key={category} value={category}>{category}</option>
                 ))}
               </select>
@@ -264,7 +185,7 @@ export default function BudgetForm({
                 type="number"
                 step="0.01"
                 value={formData.limit}
-                onChange={(e) => setFormData({ ...formData, limit: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, limit: parseFloat(e.target.value) })}
                 className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/20"
                 placeholder="0.00"
                 required
@@ -273,83 +194,13 @@ export default function BudgetForm({
             </div>
           </div>
 
-          {/* Period */}
-          <div className="space-y-2">
-            <label className="text-sm text-white/60">Budget Period</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              {periods.map((period) => (
-                <button
-                  key={period}
-                  type="button"
-                  onClick={() => handlePeriodChange(period)}
-                  disabled={isLoading}
-                  className={`px-4 py-2 rounded-lg border capitalize transition-colors ${
-                    formData.period === period
-                      ? 'bg-white/20 border-white/30 text-white'
-                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Date Range */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm text-white/60">Start Date</label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => handleStartDateChange(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm text-white/60">End Date</label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
-                <input
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Notifications */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formData.notifications}
-              onChange={(e) => setFormData({ ...formData, notifications: e.target.checked })}
-              disabled={isLoading}
-              className="rounded border-white/20 bg-white/5 text-purple-500 focus:ring-purple-500 disabled:opacity-50"
-            />
-            <span className="text-white">Enable budget notifications</span>
-          </label>
-
           {/* Action Buttons */}
           <div className="flex gap-4">
             {/* Delete Button - Only show for existing budgets */}
-            {budget && onDelete && (
+            {budget && (
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm('Are you sure you want to delete this budget?')) {
-                    onDelete(budget._id);
-                  }
-                }}
+                onClick={handleDelete}
                 disabled={isLoading}
                 className="flex-1 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 font-semibold py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
               >
