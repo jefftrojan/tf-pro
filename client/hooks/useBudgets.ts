@@ -34,13 +34,31 @@ export function useBudgets(dateRange?: DateRange) {
   });
   // Mutation for creating budget
   const createBudget = useMutation({
-    mutationFn: (data: any) => budgets.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      queryClient.invalidateQueries({ queryKey: ['budgetStats'] });
-      queryClient.invalidateQueries({ queryKey: ['budgetAlerts'] });
-    },
-  });
+  mutationFn: (data: {
+    category: string;
+    limit: number;
+    color?: string;
+    period: string;
+    startDate: string;
+    endDate: string;
+  }) => {
+    // Ensure data is correctly formatted before sending
+    const formattedData = {
+      category: data.category.trim(),
+      limit: Number(data.limit),
+      color: data.color || undefined,
+      period: data.period,
+      startDate: data.startDate,
+      endDate: data.endDate
+    };
+    return budgets.create(formattedData);
+  },
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['budgets'] });
+    queryClient.invalidateQueries({ queryKey: ['budgetStats'] });
+    queryClient.invalidateQueries({ queryKey: ['budgetAlerts'] });
+  },
+});
   // Mutation for updating budget
   const updateBudget = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 

@@ -12,7 +12,7 @@ interface BudgetCategory {
   color: string;
 }
 
-// Sample data - replace with API data
+// Sample data - ill replace with API data
 const budgetCategories: BudgetCategory[] = [
   {
     id: '1',

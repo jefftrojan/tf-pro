@@ -93,6 +93,9 @@ export interface CreateBudgetData {
   category: string;
   limit: number;
   color?: string;
+  period: string;
+  startDate: string;
+  endDate: string;
 }
 
 export interface BudgetStats {
@@ -110,7 +113,7 @@ export interface BudgetAlert {
 }
 
 // API client setup
-const baseURL = 'https://wallet-backend-f7dx.onrender.com/api/v1';
+const baseURL = 'https://tf-pro.onrender.com/api/v1';
 
 const api = axios.create({
   baseURL,
@@ -218,8 +221,8 @@ export const transactions = {
 
 // Budget endpoints
 export const budgets = {
-  getAll: () => 
-    api.get<ApiResponse<Budget[]>>('/budgets'),
+  getAll: (dateRange?: { startDate?: string; endDate?: string }) => 
+    api.get<ApiResponse<Budget[]>>('/budgets', { params: dateRange }),
   
   getOne: (id: string) => 
     api.get<ApiResponse<Budget>>(`/budgets/${id}`),

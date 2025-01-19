@@ -40,11 +40,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
         {/* Right side */}
         <div className="flex items-center gap-4">
-          {/* Notifications */}
-          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors relative">
-            <Bell className="h-6 w-6 text-white" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+         
 
           {/* User menu */}
           <div className="relative">

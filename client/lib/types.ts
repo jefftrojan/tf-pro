@@ -73,11 +73,10 @@ export interface Budget {
   limit: number;
   spent: number;
   color: string;
+  period: string;
+  startDate: string;
+  endDate: string;
   description?: string;
-  period?: {
-    startDate: string;
-    endDate: string;
-  };
   createdAt: string;
   updatedAt: string;
 }

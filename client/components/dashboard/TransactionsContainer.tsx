@@ -20,6 +20,8 @@ import type {
   Account as ApiAccount,
   CreateTransactionPayload
 } from '@/lib/types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Extend the API Transaction type for UI needs
 type Transaction = ApiTransaction & {
@@ -88,6 +90,95 @@ export default function TransactionsContainer() {
       }
       throw new Error('Failed to create transaction');
     }
+  };
+  const handleExportToPDF = () => {
+    const doc = new jsPDF();
+  
+    // Set title
+    const title = 'Transactions Report';
+    doc.setFontSize(18);
+    doc.text(title, 14, 22);
+  
+    // Prepare table data
+    const tableData = filteredTransactions.map((transaction) => {
+      const accountId = transaction.account 
+        ? (typeof transaction.account === 'string' 
+            ? transaction.account 
+            : transaction.account._id) 
+        : null;
+      
+      const account = accountId 
+        ? accounts.find((a) => a._id === accountId) 
+        : null;
+  
+      return [
+        transaction.description,
+        transaction.category,
+        transaction.type,
+        formatCurrency(transaction.amount),
+        new Date(transaction.date).toLocaleDateString(),
+        account?.name || 'Unknown Account',
+        transaction.reference || '-'
+      ];
+    });
+  
+    // Define columns
+    const columns = [
+      'Description', 
+      'Category', 
+      'Type', 
+      'Amount', 
+      'Date', 
+      'Account', 
+      'Reference'
+    ];
+  
+    // Add the table
+    autoTable(doc, {
+      head: [columns],
+      body: tableData,
+      startY: 30,
+      theme: 'striped',
+      styles: { 
+        fontSize: 9,
+        cellPadding: 3 
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185],  
+        textColor: 255 
+      },
+      alternateRowStyles: { 
+        fillColor: [240, 240, 240] 
+      },
+      columnStyles: {
+        3: { halign: 'right' },  
+        4: { halign: 'center' }  
+      }
+    });
+  
+    // Add page number and total pages
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(10);
+      doc.text(
+        `Page ${i} of ${pageCount}`, 
+        doc.internal.pageSize.width - 40, 
+        doc.internal.pageSize.height - 10
+      );
+    }
+  
+    // Add timestamp
+    doc.setFontSize(8);
+    doc.text(
+      `Generated on: ${new Date().toLocaleString()}`, 
+      14, 
+      doc.internal.pageSize.height - 10
+    );
+  
+    // Save the PDF
+    const filename = `transactions_export_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
   };
 
   // Handle transaction update
@@ -200,10 +291,13 @@ export default function TransactionsContainer() {
             )}
             Add Transaction
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors">
-            <Download className="h-5 w-5" />
-            Export
-          </button>
+          <button 
+  onClick={handleExportToPDF}
+  className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
+>
+  <Download className="h-5 w-5" />
+  Export PDF
+</button>
         </div>
       </div>
 
@@ -263,10 +357,15 @@ export default function TransactionsContainer() {
         ) : (
           <div className="divide-y divide-white/10">
             {filteredTransactions.map((transaction) => {
-              const accountId = typeof transaction.account === 'string'
-                ? transaction.account
-                : transaction.account._id;
-              const account = accounts.find((a) => a._id === accountId);
+              const accountId = transaction.account 
+              ? (typeof transaction.account === 'string' 
+                  ? transaction.account 
+                  : transaction.account._id) 
+              : null;
+            
+            const account = accountId 
+              ? accounts.find((a) => a._id === accountId) 
+              : null;
               
               return (
                 <div

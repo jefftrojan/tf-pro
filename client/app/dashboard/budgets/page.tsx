@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
   PlusCircle, 
   PieChart,
@@ -12,12 +12,14 @@ import {
   Download,
   FileSpreadsheet
 } from 'lucide-react';
-import { PieChart as RechartsGPieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart as RechartsGPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import BudgetForm from '@/components/forms/BudgetForm';
 import { useBudgets } from '@/hooks/useBudgets';
 import { formatCurrency, exportToExcel, calculateBudgetStatus, getStatusColor } from '@/lib/utils';
 import { budgetCategories, periodOptions } from '@/lib/constants/budgets';
 import { Budget } from '@/lib/types';
+import BudgetChart from '@/components/charts/BudgetChart';
+
 
 interface DateRange {
   startDate: string;
@@ -38,45 +40,14 @@ export default function BudgetsPage() {
   // Calculate date range based on selected period
   const dateRange = useMemo(() => {
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-    switch (selectedPeriod.value) {
-      case 'current':
-        return {
-          startDate: startOfMonth.toISOString(),
-          endDate: endOfMonth.toISOString()
-        };
-      case 'last':
-        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        return {
-          startDate: lastMonth.toISOString(),
-          endDate: new Date(now.getFullYear(), now.getMonth(), 0).toISOString()
-        };
-      case 'last3':
-        return {
-          startDate: new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString(),
-          endDate: endOfMonth.toISOString()
-        };
-      case 'last6':
-        return {
-          startDate: new Date(now.getFullYear(), now.getMonth() - 6, 1).toISOString(),
-          endDate: endOfMonth.toISOString()
-        };
-      case 'year':
-        return {
-          startDate: new Date(now.getFullYear(), 0, 1).toISOString(),
-          endDate: new Date(now.getFullYear(), 11, 31).toISOString()
-        };
-      case 'custom':
-        return customDateRange;
-      default:
-        return {
-          startDate: startOfMonth.toISOString(),
-          endDate: endOfMonth.toISOString()
-        };
-    }
-  }, [selectedPeriod, customDateRange]);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const endOfYear = new Date(now.getFullYear(), 11, 31);
+  
+    return {
+      startDate: startOfYear.toISOString(),
+      endDate: endOfYear.toISOString()
+    };
+  }, []);
 
   // Fetch data using custom hooks with date range
   const { 
@@ -90,14 +61,18 @@ export default function BudgetsPage() {
     deleteBudget 
   } = useBudgets(dateRange);
 
-  // Calculate chart data
-  const chartData = useMemo(() => 
-    budgets.map(budget => ({
-      name: budget.category,
-      value: budget.spent,
-      color: budget.color
-    }))
-  , [budgets]);
+  const chartData = useMemo(() => {
+    // Filter out budgets with zero or negative spent amounts
+    return budgets
+      .filter(budget => budget.spent > 0)
+      .map(budget => ({
+        name: budget.category,
+        value: budget.spent,
+        color: budget.color || 
+          budgetCategories.find(cat => cat.name === budget.category)?.color || 
+          `#${Math.floor(Math.random()*16777215).toString(16)}`
+      }));
+  }, [budgets]);
 
   // Export data
   const handleExport = () => {
@@ -147,6 +122,9 @@ export default function BudgetsPage() {
       throw error;
     }
   };
+  useEffect(() => {
+    console.log('Chart Data:', chartData);
+  }, [chartData])
 
   return (
     <div className="space-y-6">
@@ -213,29 +191,64 @@ export default function BudgetsPage() {
       </div>
 
       {/* Statistics Visualization */}
-      <div className="backdrop-blur-lg bg-white/5 rounded-xl p-6 border border-white/10">
-        <h3 className="text-lg font-medium text-white mb-4">Spending Distribution</h3>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <RechartsGPieChart>
-              <Pie
-                data={chartData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                outerRadius={120}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {chartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Legend />
-            </RechartsGPieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      {/* Statistics Visualization */}
+<div className="backdrop-blur-lg bg-white/5 rounded-xl p-6 border border-white/10">
+  <h3 className="text-lg font-medium text-white mb-4">Spending Distribution</h3>
+  
+  {/* Conditional Rendering */}
+  {isLoading ? (
+    <div className="flex items-center justify-center h-[300px]">
+      <Loader2 className="h-8 w-8 text-white animate-spin" />
+    </div>
+  ) : budgets.length === 0 ? (
+    <div className="flex items-center justify-center h-[300px] text-white/60">
+      <p>No budgets created. Start tracking your spending!</p>
+    </div>
+  ) : (
+    <div className="h-[300px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <RechartsGPieChart>
+          <Pie
+            data={chartData}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            outerRadius={120}
+            innerRadius={60}
+            fill="#8884d8"
+            dataKey="value"
+            paddingAngle={5}
+          >
+            {chartData.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.color || `#${Math.floor(Math.random()*16777215).toString(16)}`} 
+              />
+            ))}
+          </Pie>
+          <Tooltip 
+            formatter={(value, name) => [
+              formatCurrency(Number(value)), 
+              name
+            ]}
+          />
+          <Legend 
+            layout="vertical" 
+            align="right" 
+            verticalAlign="middle"
+            formatter={(value) => {
+              const matchingEntry = chartData.find(entry => entry.name === value);
+              return matchingEntry 
+                ? `${value} - ${formatCurrency(matchingEntry.value)}`
+                : value;
+            }}
+          />
+        </RechartsGPieChart>
+      </ResponsiveContainer>
+    </div>
+  )}
+</div>
+
 
       {/* Budgets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

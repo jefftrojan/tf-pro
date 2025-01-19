@@ -1,29 +1,46 @@
- // components/charts/BudgetChart.tsx
+// components/charts/BudgetChart.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
 
 const COLORS = ['#22c55e', '#f97316', '#06b6d4', '#8b5cf6', '#ec4899'];
 
-interface BudgetData {
-  name: string;
-  value: number;
-  spent: number;
-  total: number;
+interface BudgetChartProps {
+  budgets: Array<{
+    category: string;
+    limit: number;
+    spent: number;
+  }>;
 }
 
-const data: BudgetData[] = [
-  { name: 'Housing', value: 1200, spent: 1000, total: 1200 },
-  { name: 'Food', value: 500, spent: 450, total: 500 },
-  { name: 'Transportation', value: 300, spent: 280, total: 300 },
-  { name: 'Entertainment', value: 200, spent: 150, total: 200 },
-  { name: 'Others', value: 300, spent: 200, total: 300 },
-];
-
-export default function BudgetChart() {
+export default function BudgetChart({ budgets }: BudgetChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  const chartData = useMemo(() => {
+    return budgets
+      .filter(budget => budget.limit > 0 && budget.spent > 0)
+      .map(budget => ({
+        name: budget.category,
+        value: budget.spent,
+        total: budget.limit,
+        spent: budget.spent
+      }));
+  }, [budgets]);
+
+  const budgetStats = useMemo(() => {
+    const overBudgetCount = budgets.filter(budget => 
+      budget.spent > budget.limit
+    ).length;
+
+    const underBudgetCount = budgets.filter(budget => 
+      budget.spent <= budget.limit
+    ).length;
+
+    return { overBudgetCount, underBudgetCount };
+  }, [budgets]);
 
   const onPieEnter = (_: any, index: number) => {
     setActiveIndex(index);
@@ -40,13 +57,13 @@ export default function BudgetChart() {
         <div className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-lg p-4 shadow-xl">
           <p className="text-white font-medium mb-1">{data.name}</p>
           <p className="text-white/80 text-sm">
-            Budget: ${data.total.toLocaleString()}
+            Budget: {formatCurrency(data.total)}
           </p>
           <p className="text-white/80 text-sm">
-            Spent: ${data.spent.toLocaleString()}
+            Spent: {formatCurrency(data.spent)}
           </p>
           <p className="text-white/80 text-sm">
-            Remaining: ${(data.total - data.spent).toLocaleString()}
+            Remaining: {formatCurrency(data.total - data.spent)}
           </p>
         </div>
       );
@@ -54,12 +71,21 @@ export default function BudgetChart() {
     return null;
   };
 
+  // If no budgets, return null or a placeholder
+  if (chartData.length === 0) {
+    return (
+      <div className="w-full h-[400px] flex items-center justify-center text-white/60">
+        No budget data available
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-[400px]">
       <ResponsiveContainer>
         <PieChart>
           <Pie
-            data={data}
+            data={chartData}
             cx="50%"
             cy="50%"
             innerRadius={60}
@@ -70,7 +96,7 @@ export default function BudgetChart() {
             onMouseEnter={onPieEnter}
             onMouseLeave={onPieLeave}
           >
-            {data.map((entry, index) => (
+            {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={COLORS[index % COLORS.length]}
@@ -111,14 +137,18 @@ export default function BudgetChart() {
             <ArrowUpRight className="h-4 w-4" />
             <span className="text-sm">Under Budget</span>
           </div>
-          <p className="text-2xl font-bold text-white mt-1">3 Categories</p>
+          <p className="text-2xl font-bold text-white mt-1">
+            {budgetStats.underBudgetCount} Categories
+          </p>
         </div>
         <div className="backdrop-blur-lg bg-white/5 rounded-lg p-4 border border-white/10">
           <div className="flex items-center gap-2 text-rose-400">
             <ArrowDownRight className="h-4 w-4" />
             <span className="text-sm">Over Budget</span>
           </div>
-          <p className="text-2xl font-bold text-white mt-1">2 Categories</p>
+          <p className="text-2xl font-bold text-white mt-1">
+            {budgetStats.overBudgetCount} Categories
+          </p>
         </div>
       </div>
     </div>

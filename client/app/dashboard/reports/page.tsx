@@ -18,7 +18,7 @@ import SpendingChart from '@/components/dashboard/SpendingChart';
 import ExpenseChart from '@/components/charts/ExpenseChart';
 import IncomeChart from '@/components/charts/IncomeChart';
 import { formatCurrency } from '@/lib/utils';
-
+import PrintableTable from '@/components/dashboard/PrintableTable';
 const dateRanges = [
   { label: 'This Month', value: 'current' },
   { label: 'Last Month', value: 'last' },
@@ -84,7 +84,7 @@ export default function ReportsPage() {
 
   // Handle export
   const handleExport = () => {
-    // Implement export functionality
+    
   };
 
   if (isLoading) {
@@ -120,17 +120,8 @@ export default function ReportsPage() {
           <p className="text-white/60">Analyze your financial performance</p>
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors">
-            <Share2 className="h-5 w-5" />
-            Share
-          </button>
-          <button 
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white transition-colors"
-          >
-            <Download className="h-5 w-5" />
-            Export
-          </button>
+          
+          <PrintableTable stats={stats} dateRange={dateRange} />
         </div>
       </div>
 

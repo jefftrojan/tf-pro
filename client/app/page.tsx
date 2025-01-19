@@ -1,28 +1,28 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 
 const features = [
   {
     title: 'Budgeting Made Simple',
-    description: 'Easily create and manage budgets to stay on top of your finances.',
+    description: 'Create and manage budgets effortlessly with our intuitive tools and smart categorization system.',
     icon: '💰',
   },
   {
     title: 'Track Every Transaction',
-    description: 'Gain insights into your spending habits with detailed transaction tracking.',
+    description: 'Get real-time insights into your spending with automated transaction tracking and customizable categories.',
     icon: '💸',
   },
   {
     title: 'Visualize Your Spending',
-    description: 'Understand your financial trends through interactive charts and reports.',
+    description: 'Transform your financial data into actionable insights with beautiful, interactive charts and detailed reports.',
     icon: '📊',
   },
   {
     title: 'Seamless Integrations',
-    description: 'Connect your banks and credit cards for automated transaction syncing.',
+    description: 'Connect all your financial accounts in one secure place with our bank-grade encryption and automated syncing.',
     icon: '🔗',
   },
 ];
@@ -30,21 +30,24 @@ const features = [
 const benefits = [
   {
     title: 'Take Control of Your Money',
-    description: 'With powerful budgeting tools and real-time tracking, you\'ll always know where your money is going.',
+    description: 'Master your finances with our comprehensive suite of budgeting tools and real-time tracking features.',
   },
   {
     title: 'Make Informed Decisions',
-    description: 'Gain valuable insights into your spending patterns to make smarter financial choices.',
+    description: 'Transform raw data into actionable insights with our advanced analytics and personalized recommendations.',
   },
   {
     title: 'Achieve Your Financial Goals',
-    description: 'Whether you\'re saving for a big purchase or paying off debt, MoneyWise helps you stay on track.',
+    description: 'Set, track, and reach your financial milestones with our goal-tracking system and progress indicators.',
   },
 ];
 
 export default function Home() {
   const controls = useAnimation();
-  const [ref, inView] = useInView();
+  const [ref, inView] = useInView({
+    threshold: 0.2,
+    triggerOnce: true,
+  });
 
   useEffect(() => {
     if (inView) {
@@ -53,144 +56,151 @@ export default function Home() {
   }, [controls, inView]);
 
   return (
-    <div>
+    <div className="overflow-hidden">
       {/* Hero Section */}
-      <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 to-indigo-900 px-4 py-20 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto w-full">
           <div className="lg:text-center">
-            <motion.h1 
-              initial={{ y: '100%', opacity: 0 }}
+            <motion.div
+              initial={{ y: 50, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 1, ease: 'easeOut' }}
-              className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white"
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="space-y-8"
             >
-              Simplify Your Finances with <span className="text-purple-400">MoneyWise</span>
-            </motion.h1>
-            <motion.p 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1, delay: 0.5 }}
-              className="mt-3 text-base text-purple-200 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0"
-            >
-              MoneyWise is a comprehensive budgeting and expense tracking app designed to help you take control of your financial life. With powerful features and an intuitive interface, managing your money has never been easier.
-            </motion.p>
-            <div className="mt-8 sm:flex sm:justify-center lg:justify-start">
-              <motion.div 
-                initial={{ x: '-100%', opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 1, delay: 1 }}
-                className="rounded-md shadow"
-              >
-                <a
-                  href="/auth/register"
-                  className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 md:py-4 md:text-lg md:px-10"
+              <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold text-white tracking-tight">
+                Simplify Your Finances with{' '}
+                <span className="text-purple-400 inline-block">Wallet</span>
+              </h1>
+              <p className="mt-6 text-lg sm:text-xl text-purple-200 max-w-3xl mx-auto leading-relaxed">
+                Take control of your financial life with our comprehensive budgeting and expense tracking platform. 
+                Experience the power of smart money management with an interface designed for clarity and efficiency.
+              </p>
+              <div className="mt-10 flex justify-center">
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
                 >
-                  Get Started
-                </a>
-              </motion.div>
-            </div>
+                  <a
+                    href="/auth/register"
+                    className="px-8 py-4 bg-purple-600 text-white text-lg font-medium rounded-xl hover:bg-purple-700 
+                    transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                  >
+                                      Get Started Now
+
+                  </a>
+                </motion.div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="bg-white py-12 sm:py-16 lg:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              Powerful Features to Simplify Your Finances
+      <section className="bg-white py-24 px-4 sm:px-6 lg:px-8" ref={ref}>
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
+              Powerful Features for Smart Finance
             </h2>
+            <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
+              Everything you need to manage your money effectively, all in one place.
+            </p>
           </div>
-          <div className="mt-20">
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-              {features.map((feature, index) => (
-                <motion.div
-                  key={feature.title}
-                  className="pt-6"
-                  initial="hidden"
-                  animate={controls}
-                  variants={{
-                    visible: { opacity: 1, y: 0 },
-                    hidden: { opacity: 0, y: 50 },
-                  }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <div className="flow-root bg-gray-50 rounded-lg px-6 pb-8 h-full">
-                    <div className="-mt-6">
-                      <div>
-                        <span className="inline-flex items-center justify-center p-3 bg-purple-500 rounded-md shadow-lg">
-                          <span className="text-3xl text-white" aria-hidden="true">{feature.icon}</span>
-                        </span>
-                      </div>
-                      <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">
-                        {feature.title}
-                      </h3>
-                      <p className="mt-5 text-base text-gray-500">
-                        {feature.description}
-                      </p>
-                    </div>
+          <div className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial="hidden"
+                animate={controls}
+                variants={{
+                  visible: { opacity: 1, y: 0 },
+                  hidden: { opacity: 0, y: 30 },
+                }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
+                className="relative"
+              >
+                <div className="bg-gray-50 rounded-2xl p-8 h-full shadow-lg hover:shadow-xl transition-shadow duration-300">
+                  <div className="absolute -top-6 left-8">
+                    <span className="inline-flex items-center justify-center p-4 bg-purple-600 rounded-xl shadow-lg">
+                      <span className="text-3xl" aria-hidden="true">{feature.icon}</span>
+                    </span>
                   </div>
-                </motion.div>
-              ))}
-            </div>
+                  <div className="mt-8">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                      {feature.title}
+                    </h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Benefits Section */}
-      <section className="bg-gradient-to-b from-purple-800 to-indigo-900 py-12 sm:py-16 lg:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
-              Unlock the Benefits of Better Money Management
+      <section className="bg-gradient-to-b from-purple-800 to-indigo-900 py-24 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-extrabold text-white sm:text-5xl">
+              Transform Your Financial Future
             </h2>
+            <p className="mt-4 text-xl text-purple-200 max-w-3xl mx-auto">
+              Experience the benefits of intelligent money management.
+            </p>
           </div>
-          <div className="mt-20" ref={ref}>
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {benefits.map((benefit, index) => (
-                <motion.div
-                  key={benefit.title}
-                  className="pt-6"
-                  initial="hidden"
-                  animate={controls}
-                  variants={{
-                    visible: { opacity: 1, y: 0 },
-                    hidden: { opacity: 0, y: 50 },
-                  }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                >
-                  <div className="flow-root bg-white rounded-lg px-6 pb-8 h-full">
-                    <div className="-mt-6">
-                      <h3 className="mt-8 text-lg font-medium text-gray-900 tracking-tight">
-                        {benefit.title}
-                      </h3>
-                      <p className="mt-5 text-base text-gray-500">
-                        {benefit.description}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+          <div className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            {benefits.map((benefit, index) => (
+              <motion.div
+                key={benefit.title}
+                initial="hidden"
+                animate={controls}
+                variants={{
+                  visible: { opacity: 1, y: 0 },
+                  hidden: { opacity: 0, y: 30 },
+                }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
+              >
+                <div className="bg-white rounded-2xl p-8 h-full shadow-xl hover:shadow-2xl transition-shadow duration-300">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                    {benefit.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {benefit.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="bg-white">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:py-16 lg:px-8 lg:flex lg:items-center lg:justify-between">
-          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-            <span className="block">Ready to take control of your finances?</span>
-            <span className="block text-purple-600">Start using MoneyWise today.</span>
-          </h2>
-          <div className="mt-8 flex lg:mt-0 lg:flex-shrink-0">
-            <div className="inline-flex rounded-md shadow">
-              <a
-                href="/auth/register"
-                className="inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
-              >
-                Get started
-              </a>
+      <section className="bg-white py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-purple-50 rounded-3xl px-8 py-16 md:p-16 shadow-xl">
+            <div className="lg:flex lg:items-center lg:justify-between">
+              <div className="lg:max-w-2xl">
+                <h2 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
+                  Ready to transform your finances?
+                </h2>
+                <p className="mt-4 text-xl text-gray-600">
+                  Join thousands of users who have already taken control of their financial future.
+                </p>
+              </div>
+              <div className="mt-8 lg:mt-0 lg:ml-8">
+                <a
+                  href="/auth/register"
+                  className="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-xl 
+                  text-white bg-purple-600 hover:bg-purple-700 transition-colors duration-200 shadow-lg hover:shadow-xl 
+                  transform hover:-translate-y-0.5"
+                >
+                  Get Started Now
+                </a>
+              </div>
             </div>
           </div>
         </div>

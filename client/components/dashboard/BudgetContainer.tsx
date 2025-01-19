@@ -15,53 +15,70 @@ import BudgetForm from '@/components/forms/BudgetForm';
 import { useBudgets } from '@/hooks/useBudgets';
 import { formatCurrency } from '@/lib/utils';
 
-interface Budget {
-  _id: string;
-  category: string;
-  limit: number;
-  spent: number;
-  color: string;
-}
-
-interface Alert {
-  message: string;
-}
-
 export default function BudgetsContainer() {
+  // State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState('This Month');
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false);
 
+  // Fetch data
   const { 
-    budgets = [], // Provide default empty array
+    budgets, 
     stats,
-    alerts = [], // Provide default empty array
+    alerts,
     isLoading,
     isError,
     createBudget 
   } = useBudgets();
 
-  // Calculate totals with proper type checking
-  const totalBudget = Array.isArray(budgets) 
-    ? budgets.reduce((sum, budget) => sum + (budget.limit || 0), 0)
-    : 0;
+  // Calculate totals
+interface Budget {
+    _id: string;
+    category: string;
+    limit: number;
+    spent: number;
+    color: string;
+}
 
-  const totalSpent = Array.isArray(budgets)
-    ? budgets.reduce((sum, budget) => sum + (budget.spent || 0), 0)
-    : 0;
+interface Alert {
+    message: string;
+}
 
+interface UseBudgetsReturn {
+    budgets: Budget[];
+    stats: any;
+    alerts: Alert[];
+    isLoading: boolean;
+    isError: boolean;
+    createBudget: {
+        mutateAsync: (formData: any) => Promise<void>;
+    };
+}
+
+const totalBudget: number = budgets?.reduce((sum: number, budget: Budget) => sum + budget.limit, 0) || 0;
+const totalSpent: number = budgets?.reduce((sum: number, budget: Budget) => sum + budget.spent, 0) || 0;
   const remainingBudget = totalBudget - totalSpent;
 
-  const handleCreateBudget = async (formData: any) => {
+  // Handle budget creation
+  const handleCreateBudget = async (formData: {
+    category: string;
+    limit: number;
+    color?: string;
+    period: string;
+    startDate: string;
+    endDate: string;
+  }) => {
     try {
+      // Directly use the mutation from useBudgets
       await createBudget.mutateAsync(formData);
       setIsAddModalOpen(false);
-    } catch (error: any) {
-      console.error('Error creating budget:', error);
-      throw new Error(error.response?.data?.message || 'Failed to create budget');
+    } catch (error) {
+      // Error handling is now done in the mutation
+      console.error('Budget creation error', error);
     }
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -70,6 +87,7 @@ export default function BudgetsContainer() {
     );
   }
 
+  // Error state
   if (isError) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -105,7 +123,6 @@ export default function BudgetsContainer() {
 
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Total Budget Card */}
         <div className="backdrop-blur-lg bg-white/10 rounded-xl p-6 border border-white/20">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-white/60">Total Budget</h3>
@@ -117,7 +134,6 @@ export default function BudgetsContainer() {
           <p className="text-white/60 text-sm">Monthly allocation</p>
         </div>
 
-        {/* Spent Card */}
         <div className="backdrop-blur-lg bg-white/10 rounded-xl p-6 border border-white/20">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-white/60">Spent</h3>
@@ -127,11 +143,10 @@ export default function BudgetsContainer() {
             {formatCurrency(totalSpent)}
           </p>
           <p className="text-white/60 text-sm">
-            {totalBudget > 0 ? `${((totalSpent / totalBudget) * 100).toFixed(1)}% of total budget` : '0% of total budget'}
+            {((totalSpent / totalBudget) * 100).toFixed(1)}% of total budget
           </p>
         </div>
 
-        {/* Remaining Card */}
         <div className="backdrop-blur-lg bg-white/10 rounded-xl p-6 border border-white/20">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-white/60">Remaining</h3>
@@ -141,15 +156,15 @@ export default function BudgetsContainer() {
             {formatCurrency(remainingBudget)}
           </p>
           <p className="text-white/60 text-sm">
-            {totalBudget > 0 ? `${((remainingBudget / totalBudget) * 100).toFixed(1)}% remaining` : '0% remaining'}
+            {((remainingBudget / totalBudget) * 100).toFixed(1)}% remaining
           </p>
         </div>
       </div>
 
       {/* Budget Alerts */}
-      {alerts.length > 0 && (
+      {alerts?.length > 0 && (
         <div className="space-y-4">
-          {alerts.map((alert: Alert, index: number) => (
+          {alerts.map((alert: any, index: number) => (
             <div
               key={index}
               className="flex items-center gap-3 p-4 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-400"
@@ -163,8 +178,8 @@ export default function BudgetsContainer() {
 
       {/* Budgets Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {budgets.map((budget: Budget) => {
-          const percentage = budget.limit > 0 ? (budget.spent / budget.limit) * 100 : 0;
+        {budgets?.map((budget: any) => {
+          const percentage = (budget.spent / budget.limit) * 100;
           const isOverBudget = percentage > 100;
 
           return (
@@ -172,7 +187,54 @@ export default function BudgetsContainer() {
               key={budget._id}
               className="backdrop-blur-lg bg-white/5 hover:bg-white/10 rounded-xl p-6 border border-white/10 transition-colors cursor-pointer"
             >
-              {/* Budget card content remains the same */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: budget.color }}
+                  />
+                  <div>
+                    <h3 className="font-medium text-white">{budget.category}</h3>
+                    <p className="text-white/60 text-sm">Monthly Budget</p>
+                  </div>
+                </div>
+                {isOverBudget && (
+                  <div className="flex items-center gap-1 text-rose-400">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span>Over Budget</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-end">
+                  <div>
+                    <p className="text-white/60 text-sm">Spent</p>
+                    <p className="text-2xl font-bold text-white">
+                      {formatCurrency(budget.spent)}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-white/60 text-sm">of {formatCurrency(budget.limit)}</p>
+                    <p className={`text-sm font-medium ${
+                      isOverBudget ? 'text-rose-400' : 'text-emerald-400'
+                    }`}>
+                      {percentage.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all ${
+                      percentage >= 100 ? 'bg-rose-400' :
+                      percentage >= 80 ? 'bg-amber-400' :
+                      'bg-emerald-400'
+                    }`}
+                    style={{ width: `${Math.min(percentage, 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
           );
         })}
@@ -190,11 +252,13 @@ export default function BudgetsContainer() {
       </div>
 
       {/* Budget Form Modal */}
-      <BudgetForm
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSubmit={handleCreateBudget}
-      />
+      {isAddModalOpen && (
+        <BudgetForm
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleCreateBudget}
+        />
+      )}
     </div>
   );
 }
