@@ -22,7 +22,7 @@ app.use(cors());
 
 
 const corsOptions = {
-  origin: 'https://tf-pro-zpm1-e4x6868tf-jefftrojans-projects.vercel.app', 
+  origin: 'https://wallet.boolean.engineer', 
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true, // Allow cookies
 };
