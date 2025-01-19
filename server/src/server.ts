@@ -22,7 +22,7 @@ app.use(cors());
 
 
 const corsOptions = {
-  origin: 'http://localhost:3001', 
+  origin: 'https://tf-pro-zpm1-e4x6868tf-jefftrojans-projects.vercel.app', 
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true, // Allow cookies
 };
