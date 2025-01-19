@@ -1,8 +1,3 @@
-
-
-// app/dashboard/budgets/page.tsx
-'use client';
-
 import { useState, useMemo } from 'react';
 import { 
   PlusCircle, 
@@ -20,32 +15,7 @@ import { PieChart as RechartsGPieChart, Pie, Cell, ResponsiveContainer, Legend }
 import BudgetForm from '@/components/forms/BudgetForm';
 import { useBudgets } from '@/hooks/useBudgets';
 import { formatCurrency, exportToExcel, calculateBudgetStatus, getStatusColor } from '@/lib/utils';
-
-// Suggested categories with colors
-export const budgetCategories = [
-  { name: 'Housing', color: '#22c55e' },
-  { name: 'Transportation', color: '#3b82f6' },
-  { name: 'Food & Dining', color: '#f59e0b' },
-  { name: 'Utilities', color: '#6366f1' },
-  { name: 'Entertainment', color: '#ec4899' },
-  { name: 'Healthcare', color: '#14b8a6' },
-  { name: 'Shopping', color: '#8b5cf6' },
-  { name: 'Personal Care', color: '#f43f5e' },
-  { name: 'Education', color: '#0ea5e9' },
-  { name: 'Savings', color: '#84cc16' },
-  { name: 'Debt Payments', color: '#ea580c' },
-  { name: 'Others', color: '#64748b' }
-];
-
-// Period options
-const periodOptions = [
-  { label: 'This Month', value: 'current' },
-  { label: 'Last Month', value: 'last' },
-  { label: 'Last 3 Months', value: 'last3' },
-  { label: 'Last 6 Months', value: 'last6' },
-  { label: 'This Year', value: 'year' },
-  { label: 'Custom', value: 'custom' }
-];
+import { budgetCategories, periodOptions } from '@/lib/constants/budgets';
 
 interface DateRange {
   startDate: string;

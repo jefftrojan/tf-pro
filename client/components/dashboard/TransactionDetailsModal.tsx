@@ -61,7 +61,11 @@ export default function TransactionDetailsModal({
   const [isEditMode, setIsEditMode] = useState(false);
   
   // Find associated account
-  const account = accounts.find(a => a._id === transaction.account);
+  const accountId =
+typeof transaction.account === 'string'
+  ? transaction.account
+  : transaction.account?._id;
+  const account = accounts.find((a) => a._id === accountId);
 
   const handleDelete = async () => {
     if (!onDelete) return;
@@ -99,6 +103,7 @@ export default function TransactionDetailsModal({
       />
     );
   }
+  
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -146,8 +151,8 @@ export default function TransactionDetailsModal({
           <div className="grid grid-cols-2 gap-6">
             <div>
               <p className="text-white/60 text-sm mb-1">Account</p>
-              <p className="text-white">{account?.name || 'Unknown Account'}</p>
-            </div>
+             <p> {account?.name || `Unknown Account (${transaction.account})`} </p>
+              </div>
             <div>
               <p className="text-white/60 text-sm mb-1">Type</p>
               <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full ${

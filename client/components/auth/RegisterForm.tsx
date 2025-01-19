@@ -140,11 +140,11 @@ export default function RegisterForm() {
 
       <p className="text-sm text-white/60 text-center">
         By signing up, you agree to our{' '}
-        <Link href="/terms" className="text-white hover:text-blue-200">
+        <Link href="#/terms" className="text-white hover:text-blue-200">
           Terms of Service
         </Link>{' '}
         and{' '}
-        <Link href="/privacy" className="text-white hover:text-blue-200">
+        <Link href="#/privacy" className="text-white hover:text-blue-200">
           Privacy Policy
         </Link>
       </p>

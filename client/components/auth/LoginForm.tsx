@@ -22,7 +22,7 @@ export default function LoginForm() {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5001/api/v1/auth/login', formData);
+      const response = await axios.post('https://wallet-backend-f7dx.onrender.com/api/v1/auth/login', formData);
       
       if (response.data.token) {
         // Store the token
