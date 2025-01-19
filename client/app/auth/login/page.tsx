@@ -13,7 +13,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Glass effect card */}
-        <div className="backdrop-blur-lg bg-white/30 p-8 rounded-2xl shadow-xl border border-white/30">
+        <div className="backdrop-blur-lg bg-purple-500/30 p-8 rounded-2xl shadow-xl border border-white/30">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
             <p className="text-white/80">Sign in to manage your finances</p>
