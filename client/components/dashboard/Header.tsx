@@ -26,7 +26,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-md bg-white/5 border-b border-white/10">
+    <header className="sticky top-0 z-30 backdrop-blur-md bg-purple-700 border-b border-white/10">
       <div className="flex items-center justify-between px-6 py-4">
         {/* Left side */}
         <div className="flex items-center gap-4">
@@ -55,7 +55,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
                 <User className="h-5 w-5 text-white" />
               </div>
-              <span className="text-white font-medium">John Doe</span>
+              <span className="text-white font-medium">Profile</span>
               <ChevronDown className="h-4 w-4 text-white opacity-60" />
             </button>
 

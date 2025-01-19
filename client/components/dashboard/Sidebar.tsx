@@ -1,8 +1,8 @@
-// components/dashboard/Sidebar.tsx
 'use client';
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import { 
   LayoutDashboard,
   Wallet,
@@ -10,8 +10,10 @@ import {
   PieChart,
   FileText,
   Settings,
-  X 
+  X,
+  Loader2
 } from 'lucide-react';
+import { auth } from '@/lib/api';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -54,6 +56,15 @@ const menuItems = [
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
+  // Fetch current user data
+  const { data: userData, isLoading } = useQuery({
+    queryKey: ['user'],
+    queryFn: async () => {
+      const response = await auth.getMe();
+      return response.data;
+    },
+  });
+
   const isActive = (path: string) => {
     return pathname === path;
   };
@@ -63,7 +74,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Backdrop for mobile */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-purple-700 z-40 lg:hidden"
           onClick={onClose}
         />
       )}
@@ -109,8 +120,20 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* User info at bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4">
           <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-            <p className="text-white text-sm mb-1">Logged in as</p>
-            <p className="text-white font-medium">john.doe@example.com</p>
+            <p className="text-white/60 text-sm mb-1">Logged in as</p>
+            {isLoading ? (
+              <div className="flex items-center gap-2 text-white">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Loading...
+              </div>
+            ) : userData?.data ? (
+              <>
+                <p className="text-white font-medium">{userData.data.name}</p>
+                <p className="text-white/60 text-sm">{userData.data.email}</p>
+              </>
+            ) : (
+              <p className="text-white/60">Not logged in</p>
+            )}
           </div>
         </div>
       </aside>

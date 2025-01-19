@@ -78,6 +78,7 @@ export default function BudgetOverview() {
           You've spent 87.5% of your total budget
         </p>
       </div>
+      
 
       {/* Category List */}
       <div className="space-y-4">

@@ -1,7 +1,7 @@
 // components/forms/AccountForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, 
   Wallet, 
@@ -9,19 +9,32 @@ import {
   PiggyBank, 
   TrendingUp,
   DollarSign,
-  Loader2 
+  Loader2,
+  Trash2
 } from 'lucide-react';
+
+interface Account {
+  _id: string;
+  name: string;
+  type: string;
+  balance: number;
+  currency: string;
+}
 
 interface AccountFormProps {
   isOpen: boolean;
   onClose: () => void;
-  account?: {
-    id: string;
-    name: string;
-    type: string;
-    balance: number;
-    currency: string;
-  };
+  onSubmit: (formData: Partial<Account>) => Promise<void>;
+  onDelete?: () => Promise<void>;
+  account?: Account | null;
+  isLoading?: boolean;
+}
+
+interface FormData {
+  name: string;
+  type: string;
+  balance: string;
+  currency: string;
 }
 
 const accountTypes = [
@@ -33,30 +46,90 @@ const accountTypes = [
 
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD'];
 
-export default function AccountForm({ isOpen, onClose, account }: AccountFormProps) {
-  const [formData, setFormData] = useState({
-    name: account?.name || '',
-    type: account?.type || 'checking',
-    balance: account?.balance?.toString() || '0',
-    currency: account?.currency || 'USD'
+export default function AccountForm({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  onDelete,
+  account,
+  isLoading = false
+}: AccountFormProps) {
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    type: 'checking',
+    balance: '0',
+    currency: 'USD'
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Update form data when account changes
+  useEffect(() => {
+    if (account) {
+      setFormData({
+        name: account.name,
+        type: account.type,
+        balance: account.balance.toString(),
+        currency: account.currency
+      });
+    } else {
+      setFormData({
+        name: '',
+        type: 'checking',
+        balance: '0',
+        currency: 'USD'
+      });
+    }
+  }, [account]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+
+    if (!validateForm()) {
+      return;
+    }
 
     try {
-      // API call would go here
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      onClose();
+      const payload = {
+        name: formData.name,
+        type: formData.type,
+        balance: parseFloat(formData.balance),
+        currency: formData.currency
+      };
+
+      await onSubmit(payload);
     } catch (err: any) {
-      setError(err.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
+      setError(err.response?.data?.message || err.message || 'Something went wrong');
     }
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    
+    if (window.confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
+      setIsDeleting(true);
+      try {
+        await onDelete();
+        onClose();
+      } catch (err: any) {
+        setError(err.response?.data?.message || err.message || 'Failed to delete account');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
+  const validateForm = (): boolean => {
+    if (!formData.name.trim()) {
+      setError('Account name is required');
+      return false;
+    }
+    if (isNaN(parseFloat(formData.balance))) {
+      setError('Invalid balance amount');
+      return false;
+    }
+    return true;
   };
 
   if (!isOpen) return null;
@@ -100,6 +173,7 @@ export default function AccountForm({ isOpen, onClose, account }: AccountFormPro
               className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/20"
               placeholder="e.g., Main Checking Account"
               required
+              disabled={isLoading || isDeleting}
             />
           </div>
 
@@ -111,12 +185,13 @@ export default function AccountForm({ isOpen, onClose, account }: AccountFormPro
                 <button
                   key={type.id}
                   type="button"
+                  disabled={isLoading || isDeleting}
                   onClick={() => setFormData({ ...formData, type: type.id })}
                   className={`flex items-center gap-2 p-3 rounded-lg border transition-colors ${
                     formData.type === type.id
                       ? 'bg-white/20 border-white/30 text-white'
                       : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                  }`}
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <type.icon className="h-5 w-5" />
                   <span className="text-sm">{type.name}</span>
@@ -138,6 +213,7 @@ export default function AccountForm({ isOpen, onClose, account }: AccountFormPro
                 className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/20"
                 placeholder="0.00"
                 required
+                disabled={isLoading || isDeleting}
               />
             </div>
           </div>
@@ -149,6 +225,7 @@ export default function AccountForm({ isOpen, onClose, account }: AccountFormPro
               value={formData.currency}
               onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
               className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/20"
+              disabled={isLoading || isDeleting}
             >
               {currencies.map((currency) => (
                 <option key={currency} value={currency}>{currency}</option>
@@ -156,21 +233,46 @@ export default function AccountForm({ isOpen, onClose, account }: AccountFormPro
             </select>
           </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <div className="flex items-center justify-center">
-                <Loader2 className="animate-spin h-5 w-5 mr-2" />
-                {account ? 'Updating Account...' : 'Creating Account...'}
-              </div>
-            ) : (
-              account ? 'Update Account' : 'Create Account'
+          {/* Action Buttons */}
+          <div className="flex gap-4">
+            {/* Delete Button - Only show for existing accounts */}
+            {account && onDelete && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isLoading || isDeleting}
+                className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-200 font-semibold py-2 px-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-red-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? (
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                    Deleting...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center">
+                    <Trash2 className="h-5 w-5 mr-2" />
+                    Delete
+                  </div>
+                )}
+              </button>
             )}
-          </button>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading || isDeleting}
+              className={`flex-1 bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/40 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <Loader2 className="animate-spin h-5 w-5 mr-2" />
+                  {account ? 'Updating...' : 'Creating...'}
+                </div>
+              ) : (
+                account ? 'Update Account' : 'Create Account'
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>

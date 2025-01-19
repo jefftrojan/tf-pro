@@ -1,23 +1,24 @@
-// components/charts/IncomeChart.tsx
+// components/dashboard/SpendingChart.tsx
 'use client';
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-interface IncomeChartProps {
+interface SpendingChartProps {
   data: Array<{
-    name: string;
-    value: number;
+    month: string;
+    income: number;
+    expenses: number;
   }>;
 }
 
-export default function IncomeChart({ data }: IncomeChartProps) {
+export default function SpendingChart({ data }: SpendingChartProps) {
   return (
     <div className="h-[300px]">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data}>
+        <LineChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
           <XAxis 
-            dataKey="name" 
+            dataKey="month" 
             stroke="#ffffff60"
             tick={{ fill: '#ffffff60' }}
           />
@@ -38,8 +39,19 @@ export default function IncomeChart({ data }: IncomeChartProps) {
           <Legend 
             wrapperStyle={{ color: '#ffffff60' }}
           />
-          <Bar dataKey="value" fill="#34d399" />
-        </BarChart>
+          <Line 
+            type="monotone" 
+            dataKey="income" 
+            stroke="#34d399" 
+            activeDot={{ r: 8 }}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="expenses" 
+            stroke="#f43f5e" 
+            activeDot={{ r: 8 }}
+          />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );

@@ -42,7 +42,7 @@ export default function RegisterForm() {
         router.push('/dashboard');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'An error occurred during registration');
+      setError(err.response?.data?.error);
     } finally {
       setIsLoading(false);
     }

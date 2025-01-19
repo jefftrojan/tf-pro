@@ -1,7 +1,7 @@
 // components/forms/TransactionForm.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, 
   DollarSign, 
@@ -15,21 +15,42 @@ import {
   ArrowDownRight
 } from 'lucide-react';
 
+interface Account {
+  _id: string;
+  name: string;
+  type: string;
+}
+
+interface Transaction {
+  _id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  category: string;
+  account: string;
+  date: string;
+  description?: string;
+  tags?: string[];
+  receipt?: File | null;
+}
+
+interface TransactionFormData {
+  type: 'income' | 'expense';
+  amount: string;
+  category: string;
+  account: string;
+  date: string;
+  description: string;
+  tags: string[];
+  receipt: File | null;
+}
+
 interface TransactionFormProps {
   isOpen: boolean;
   onClose: () => void;
-  transaction?: {
-    id: string;
-    type: string;
-    amount: number;
-    category: string;
-    account: string;
-    date: string;
-    description?: string;
-    receipt?: string;
-    tags?: string[];
-  };
-  accounts: Array<{ id: string; name: string }>;
+  onSubmit: (data: Partial<Transaction>) => Promise<void>;
+  accounts: Account[];
+  transaction?: Transaction;
+  isLoading?: boolean;
 }
 
 const categories = [
@@ -46,63 +67,129 @@ const categories = [
   'Others'
 ];
 
-export default function TransactionForm({ isOpen, onClose, transaction, accounts }: TransactionFormProps) {
-  const [formData, setFormData] = useState({
-    type: transaction?.type || 'expense',
-    amount: transaction?.amount?.toString() || '',
-    category: transaction?.category || '',
-    account: transaction?.account || '',
-    date: transaction?.date || new Date().toISOString().split('T')[0],
-    description: transaction?.description || '',
-    tags: transaction?.tags || [],
-    receipt: transaction?.receipt || null
+export default function TransactionForm({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  accounts,
+  transaction,
+  isLoading = false
+}: TransactionFormProps) {
+  // Form state
+  const [formData, setFormData] = useState<TransactionFormData>({
+    type: 'expense',
+    amount: '',
+    category: '',
+    account: '',
+    date: new Date().toISOString().split('T')[0],
+    description: '',
+    tags: [],
+    receipt: null
   });
-  const [loading, setLoading] = useState(false);
+  
   const [error, setError] = useState('');
   const [newTag, setNewTag] = useState('');
 
+  // Update form when editing existing transaction
+  useEffect(() => {
+    if (transaction) {
+      setFormData({
+        type: transaction.type,
+        amount: transaction.amount.toString(),
+        category: transaction.category,
+        account: transaction.account,
+        date: transaction.date,
+        description: transaction.description || '',
+        tags: transaction.tags || [],
+        receipt: transaction.receipt || null
+      });
+    }
+  }, [transaction]);
+
+  const validateForm = (): boolean => {
+    // Reset error
+    setError('');
+
+    // Required fields
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      setError('Please enter a valid amount');
+      return false;
+    }
+
+    if (!formData.account) {
+      setError('Please select an account');
+      return false;
+    }
+
+    if (!formData.category) {
+      setError('Please select a category');
+      return false;
+    }
+
+    if (!formData.date) {
+      setError('Please select a date');
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+
+    if (!validateForm()) {
+      return;
+    }
 
     try {
-      // API call would go here
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      const submitData = {
+        ...formData,
+        amount: parseFloat(formData.amount),
+        tags: formData.tags.length > 0 ? formData.tags : undefined,
+        description: formData.description.trim() || undefined
+      };
+
+      await onSubmit(submitData);
       onClose();
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to submit transaction');
+      }
     }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Handle file upload logic here
-      console.log('File selected:', file);
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError('File size must be less than 5MB');
+        return;
+      }
+      setFormData(prev => ({ ...prev, receipt: file }));
     }
   };
 
   const addTag = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && newTag.trim()) {
       e.preventDefault();
-      if (!formData.tags.includes(newTag.trim())) {
-        setFormData({
-          ...formData,
-          tags: [...formData.tags, newTag.trim()]
-        });
+      const tag = newTag.trim();
+      if (!formData.tags.includes(tag)) {
+        setFormData(prev => ({
+          ...prev,
+          tags: [...prev.tags, tag]
+        }));
       }
       setNewTag('');
     }
   };
 
   const removeTag = (tagToRemove: string) => {
-    setFormData({
-      ...formData,
-      tags: formData.tags.filter(tag => tag !== tagToRemove)
-    });
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
   };
 
   if (!isOpen) return null;
@@ -117,24 +204,28 @@ export default function TransactionForm({ isOpen, onClose, transaction, accounts
 
       {/* Modal */}
       <div className="relative w-full max-w-md backdrop-blur-lg bg-white/10 rounded-2xl border border-white/20 shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">
             {transaction ? 'Edit Transaction' : 'New Transaction'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            disabled={isLoading}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
           >
             <X className="h-5 w-5 text-white" />
           </button>
         </div>
 
+        {/* Error Message */}
         {error && (
           <div className="bg-red-500/20 border border-red-500/50 text-white p-3 rounded-lg text-sm mb-6">
             {error}
           </div>
         )}
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Transaction Type */}
           <div className="space-y-2">
@@ -196,11 +287,12 @@ export default function TransactionForm({ isOpen, onClose, transaction, accounts
                 required
               >
                 <option value="">Select Account</option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
+                {Array.isArray(accounts) &&
+    accounts.map((account: any) => (
+      <option key={account._id} value={account._id}>
+        {account.name}
+      </option>
+    ))}
               </select>
             </div>
           </div>
@@ -309,10 +401,10 @@ export default function TransactionForm({ isOpen, onClose, transaction, accounts
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={isLoading}
             className="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-2 px-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-white/40 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (
+            {isLoading ? (
               <div className="flex items-center justify-center">
                 <Loader2 className="animate-spin h-5 w-5 mr-2" />
                 {transaction ? 'Updating...' : 'Creating...'}
@@ -326,3 +418,4 @@ export default function TransactionForm({ isOpen, onClose, transaction, accounts
     </div>
   );
 }
+
