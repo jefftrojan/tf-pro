@@ -14,45 +14,50 @@ import {
   Loader2 
 } from 'lucide-react';
 import { useAccounts } from '@/hooks/useAccounts';
+import { useTransactions } from '@/hooks/useTransactions';
 import { formatCurrency } from '@/lib/utils';
 import AccountForm from '@/components/forms/AccountForm';
-
-interface Account {
-  _id: string;
-  name: string;
-  type: string;
-  balance: number;
-  currency?: string;
-  monthlyIncome?: number;
-  monthlyExpenses?: number;
-}
+import { Account, Transaction } from '@/lib/types';
 
 export default function AccountsOverview() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   
   const {
-    accounts,
-    isLoading,
-    isError,
+    accounts = [],
+    isLoading: isLoadingAccounts,
+    isError: isAccountError,
     createAccount,
     updateAccount,
     deleteAccount,
-    error
+    error: accountError
   } = useAccounts();
 
-  const totalBalance = Array.isArray(accounts)
-    ? accounts.reduce((sum, account) => sum + (account.balance || 0), 0)
-    : 0;
+  const {
+    transactions = [],
+    isLoading: isLoadingTransactions
+  } = useTransactions({
+    timeframe: 'month' // Get current month's transactions
+  });
 
-  // Calculate total income and expenses from accounts
-  const totalIncome = Array.isArray(accounts)
-    ? accounts.reduce((sum, account) => sum + (account.monthlyIncome || 0), 0)
-    : 0;
-  
-  const totalExpenses = Array.isArray(accounts)
-    ? accounts.reduce((sum, account) => sum + (account.monthlyExpenses || 0), 0)
-    : 0;
+  const isLoading = isLoadingAccounts || isLoadingTransactions;
+  const isError = isAccountError;
+  const error = accountError;
+
+  const totalBalance = accounts.reduce((sum, account) => sum + account.balance, 0);
+
+  // Calculate monthly income and expenses from transactions
+  const currentMonthStats = transactions.reduce((stats, transaction) => {
+    if (transaction.type === 'income') {
+      stats.income += transaction.amount;
+    } else if (transaction.type === 'expense') {
+      stats.expenses += transaction.amount;
+    }
+    return stats;
+  }, { income: 0, expenses: 0 });
+
+  const totalIncome = currentMonthStats.income;
+  const totalExpenses = currentMonthStats.expenses;
 
   const getAccountIcon = (type: string) => {
     switch (type.toLowerCase()) {
@@ -67,7 +72,7 @@ export default function AccountsOverview() {
     }
   };
 
-  const handleCreateAccount = async (formData: Partial<Account>) => {
+  const handleCreateAccount = async (formData: Omit<Account, '_id'>) => {
     try {
       if (!formData.name || !formData.type || formData.balance === undefined) {
         throw new Error('Missing required fields');
@@ -85,14 +90,12 @@ export default function AccountsOverview() {
     }
   };
 
-  const handleUpdateAccount = async (formData: Partial<Account>) => {
+  const handleUpdateAccount = async (formData: Partial<Omit<Account, '_id'>>) => {
     if (selectedAccount?._id) {
       try {
         await updateAccount.mutate({
           id: selectedAccount._id,
-          data: {
-            ...formData
-          }
+          data: formData
         });
         setIsFormOpen(false);
         setSelectedAccount(null);
@@ -113,7 +116,7 @@ export default function AccountsOverview() {
       }
     }
   };
-
+  
   if (isLoading) {
     return (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

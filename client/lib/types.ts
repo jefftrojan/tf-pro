@@ -21,3 +21,4 @@ export interface Account {
     receipt?: string;
     tags?: string[];
   }
+
