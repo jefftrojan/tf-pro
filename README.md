@@ -4,6 +4,8 @@
 
 Wallet  is a simple personal finance management application that helps users track their expenses, manage budgets, and gain insights into their financial health. Built with modern web technologies, the application provides an intuitive and powerful way to monitor your financial activities.
 
+Deployment at -> https://wallet.boolean.engineer
+
 ## 🌟 Features
 
 ### 💰 Expense Tracking
